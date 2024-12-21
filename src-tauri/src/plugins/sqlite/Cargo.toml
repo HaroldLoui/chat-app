@@ -1,0 +1,13 @@
+[package]
+name = "tauri-plugin-chat-sqlite"
+version = "0.1.0"
+edition = "2021"
+links = "tauri-plugin-chat-sqlite"
+
+[dependencies]
+tauri.workspace = true
+anyhow.workspace = true 
+rusqlite.workspace = true
+
+[build-dependencies]
+tauri-plugin.workspace = true

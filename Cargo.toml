@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = [
+    "src-tauri"
+]
+
+[workspace.dependencies]
+tauri = { version = "2", features = ["wry"] }
+tauri-plugin-http = "2"
+tauri-plugin-shell = "2"
+serde = "1"
+serde_json = "1"
+rusqlite = { version = "0.32.0", features = ["bundled", "chrono"] }
+chrono = "0.4.38"
+rs-snowflake = "0.6.0"
+anyhow = "1.0.93"
+static_init = "1.0.3"
+tauri-plugin = { version = "2", features = ["build"] }
+tauri-plugin-chat-sqlite = { path = "./src-tauri/src/plugins/sqlite" }
+tauri-plugin-chat-openai = { path = "./src-tauri/src/plugins/openai" }
+tauri-plugin-chat-request = { path = "./src-tauri/src/plugins/request" }
+tokio = { version = "1" }
+derive_builder = "0.20.2"
