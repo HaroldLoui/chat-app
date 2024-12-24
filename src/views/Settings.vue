@@ -52,7 +52,28 @@
         <div class="form-item">
           <vs-button color="primary" type="flat"> 新增 </vs-button>
         </div>
-        <api-table></api-table>
+        <div class="form-item">
+          <div style="width: 40%">
+            <vs-input label="接口地址" />
+          </div>
+          <div style="width: 40%">
+            <vs-input label="密钥" type="password" />
+          </div>
+          <div style="width: 20%">
+            <vs-checkbox v-model="option"> 默认 </vs-checkbox>
+          </div>
+        </div>
+        <div class="form-item">
+          <div style="width: 40%">
+            <vs-input label="接口地址" />
+          </div>
+          <div style="width: 40%">
+            <vs-input label="密钥" type="password" />
+          </div>
+          <div style="width: 20%">
+            <vs-button type="flat">设为默认</vs-button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -61,8 +82,6 @@
 <script setup lang="ts">
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-
-import ApiTable from "../components/ApiTable.vue";
 
 const router = useRouter();
 const goBack = () => {
@@ -78,6 +97,8 @@ const proxyForm = reactive<Proxy>({
   password: "",
   isEnable: false,
 });
+
+const option = ref<boolean>(true);
 </script>
 
 <style lang="scss" scoped>
@@ -131,7 +152,7 @@ const proxyForm = reactive<Proxy>({
 
       .form-item {
         width: 100%;
-        height: 40px;
+        min-height: 40px;
         margin-bottom: 10px;
         display: flex;
         align-items: center;
