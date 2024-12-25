@@ -50,38 +50,48 @@
       <div class="form-box">
         <div class="form-title">接口管理</div>
         <div class="form-item">
-          <vs-button color="primary" type="flat"> 新增 </vs-button>
+          <vs-button color="primary" type="flat" @click="onInsertConfig"> 新增 </vs-button>
         </div>
-        <div class="form-item">
-          <div style="width: 40%">
-            <vs-input label="接口地址" />
+        <div class="form-item" v-for="config in apiConfigs" :key="config.id">
+          <div style="width: 38%">
+            <vs-input v-model="config.url" label="接口地址" />
           </div>
-          <div style="width: 40%">
-            <vs-input label="密钥" type="password" />
+          <div style="width: 38%">
+            <vs-input v-model="config.key" label="密钥" type="password" />
           </div>
-          <div style="width: 20%">
-            <vs-checkbox v-model="option"> 默认 </vs-checkbox>
+          <div style="width: 12%">
+            <text-button :disabled="config.isDefault" @click="handleConfig(config.id, true)">设为默认</text-button>
+          </div>
+          <div style="width: 12%">
+            <text-button type="danger" @click="handleConfig(config.id, false)">删除</text-button>
           </div>
         </div>
-        <div class="form-item">
-          <div style="width: 40%">
-            <vs-input label="接口地址" />
+        <div v-if="showConfigForm" class="form-item">
+          <div style="width: 38%">
+            <vs-input v-model="configForm.url" label="接口地址" />
           </div>
-          <div style="width: 40%">
-            <vs-input label="密钥" type="password" />
+          <div style="width: 38%">
+            <vs-input v-model="configForm.key" label="密钥" type="password" />
           </div>
-          <div style="width: 20%">
-            <vs-button type="flat">设为默认</vs-button>
+          <div style="width: 14%">
+            <text-button @click="handleSaveConfig(true)">保存并默认</text-button>
+          </div>
+          <div style="width: 10%">
+            <text-button @click="handleSaveConfig(false)">仅保存</text-button>
           </div>
         </div>
       </div>
     </div>
   </div>
+  <my-confirm ref="myConfirm" @confirm="invokeConfig"></my-confirm>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+
+import TextButton from "../components/TextButton.vue";
+import MyConfirm from "../components/Confirm.vue";
 
 const router = useRouter();
 const goBack = () => {
@@ -98,7 +108,59 @@ const proxyForm = reactive<Proxy>({
   isEnable: false,
 });
 
-const option = ref<boolean>(true);
+const apiConfigs = reactive<Array<ApiConfig>>([
+  {
+    id: 1,
+    url: null,
+    key: null,
+    isDefault: true,
+  },
+  {
+    id: 2,
+    url: null,
+    key: null,
+    isDefault: false,
+  },
+]);
+const configForm = reactive<ApiConfig>({
+  id: 0,
+  url: null,
+  key: null,
+  isDefault: false,
+});
+const showConfigForm = ref<boolean>(false);
+const onInsertConfig = () => {
+  configForm.id = 0;
+  configForm.url = null;
+  configForm.key = null;
+  configForm.isDefault = false;
+  showConfigForm.value = true;
+};
+const handleSaveConfig = (setDefault: boolean) => {
+  configForm.isDefault = setDefault;
+  console.log("保存成功");
+  showConfigForm.value = false;
+};
+
+const myConfirm = ref();
+const chooseConfig = ref<number | null>();
+const handleType = ref<boolean>(true);
+const handleConfig = (id: number, type: boolean) => {
+  chooseConfig.value = id;
+  handleType.value = type;
+  const msg = type ? "确认设置该配置为默认配置？" : "删除后不可恢复，确定删除当前接口配置？";
+  myConfirm.value.show(msg);
+};
+const invokeConfig = () => {
+  if (chooseConfig.value !== null) {
+    if (handleType.value) {
+      console.log("调用设置默认接口", chooseConfig.value);
+    } else {
+      console.log("调用删除接口", chooseConfig.value);
+    }
+    chooseConfig.value = null;
+  }
+};
 </script>
 
 <style lang="scss" scoped>

@@ -1,3 +1,5 @@
+declare type ButtonType = "primary" | "success" | "warning" | "danger" | "info";
+
 declare interface ChatBox {
   id: string;
   title: string;
@@ -21,4 +23,11 @@ declare interface Proxy {
   username: string;
   password: string;
   isEnable: boolean;
+}
+
+declare interface ApiConfig {
+  id: number;
+  url: string | null;
+  key: string | null;
+  isDefault: boolean;
 }

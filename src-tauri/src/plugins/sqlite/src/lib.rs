@@ -48,7 +48,6 @@ const CONFIG_TABLE_NAME: &'static str = "config";
 const CRATE_CONFIG_TABLE_SQL: &'static str = "
 CREATE TABLE config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NULL,
     url TEXT NULL,
     key TEXT NULL,
     is_default INTEGER DEFAULT 0

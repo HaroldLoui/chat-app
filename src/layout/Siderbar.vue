@@ -45,22 +45,7 @@
     </div>
   </div>
 
-  <vs-dialog v-model="deleteChatDialog" width="550px" not-center>
-    <template #header>
-      <h6 class="not-margin"></h6>
-    </template>
-
-    <div class="con-content">
-      <p>删除后不可恢复！确认删除该对话？</p>
-    </div>
-
-    <template #footer>
-      <div class="con-footer">
-        <vs-button type="transparent" @click="invokeDeleteChat"> 确认 </vs-button>
-        <vs-button color="danger" type="transparent" @click="deleteChatDialog = false"> 取消 </vs-button>
-      </div>
-    </template>
-  </vs-dialog>
+  <my-confirm ref="myConfirm" @confirm="invokeDeleteChat"></my-confirm>
 </template>
 
 <script setup lang="ts">
@@ -70,6 +55,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { CHAT_BOX_APIS } from "../constants";
 
 import ChatBox from "../components/ChatBox.vue";
+import MyConfirm from "../components/Confirm.vue";
 
 onMounted(async () => {
   await handleSearch();
@@ -100,16 +86,16 @@ const handleChooseChat = (i: number, chat: ChatBox) => {
   emits("changeChat", chat);
 };
 
-const deleteChatDialog = ref<boolean>(false);
+const myConfirm = ref();
 const deleteChatId = ref<string>("");
 const handleDeleteChat = (id: string | number) => {
   deleteChatId.value = id.toString();
-  deleteChatDialog.value = true;
+  myConfirm.value.show("删除后不可恢复！确认删除该对话？");
 };
 const invokeDeleteChat = async () => {
   await invoke(CHAT_BOX_APIS.DEL, { id: deleteChatId.value });
   getChatList();
-  deleteChatDialog.value = false;
+  myConfirm.value.close();
 };
 
 const router = useRouter();
