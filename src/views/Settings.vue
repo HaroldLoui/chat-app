@@ -21,30 +21,32 @@
           </div>
         </div>
         <div class="form-item">
-          <vs-checkbox v-model="proxyAuthentication"> Proxy authentication </vs-checkbox>
+          <vs-checkbox v-model="proxyForm.authentication"> Proxy authentication </vs-checkbox>
         </div>
         <div class="form-item">
-          <div class="form-item-label" :class="{ diabled: !proxyAuthentication }">Username</div>
+          <div class="form-item-label" :class="{ diabled: !proxyForm.authentication }">Username</div>
           <div class="form-item-input">
-            <vs-input v-model="proxyForm.username" :disabled="!proxyAuthentication" style="width: 100%" />
+            <vs-input v-model="proxyForm.username" :disabled="!proxyForm.authentication" style="width: 100%" />
           </div>
         </div>
         <div class="form-item">
-          <div class="form-item-label" :class="{ diabled: !proxyAuthentication }">Password</div>
+          <div class="form-item-label" :class="{ diabled: !proxyForm.authentication }">Password</div>
           <div class="form-item-input">
             <vs-input
               v-model="proxyForm.password"
-              :disabled="!proxyAuthentication"
+              :disabled="!proxyForm.authentication"
               type="password"
               style="width: 100%"
             />
           </div>
         </div>
         <div class="form-item">
-          <vs-button color="primary" type="flat"> 保存并启用 </vs-button>
-          <vs-button color="primary" type="flat"> 保存 </vs-button>
-          <vs-button v-if="proxyForm.isEnable" color="danger" type="flat"> 禁用代理 </vs-button>
-          <vs-button v-else color="success" type="flat"> 启用代理 </vs-button>
+          <vs-button color="primary" type="flat" @click="onSaveProxy(true)"> 保存并启用 </vs-button>
+          <vs-button color="primary" type="flat" @click="onSaveProxy(false)"> 保存 </vs-button>
+          <vs-button v-if="proxyForm.isEnable" color="danger" type="flat" @click="onEnableProxy(false)">
+            禁用代理
+          </vs-button>
+          <vs-button v-else color="success" type="flat" @click="onEnableProxy(true)"> 启用代理 </vs-button>
         </div>
       </div>
       <div class="form-box">
@@ -83,8 +85,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import { invoke } from "@tauri-apps/api/core";
+import { MESSAGE_APIS } from "../constants";
 
 import TextButton from "../components/TextButton.vue";
 import MyConfirm from "../components/Confirm.vue";
@@ -94,15 +98,34 @@ const goBack = () => {
   router.back();
 };
 
-const proxyAuthentication = ref<boolean>(false);
-const proxyForm = reactive<Proxy>({
+onMounted(() => {
+  queryProxy();
+});
+
+const proxyForm = ref<Proxy>({
   id: 0,
   host: "http://127.0.0.1",
   port: 10809,
   username: "",
   password: "",
   isEnable: false,
+  authentication: false,
 });
+const queryProxy = async () => {
+  proxyForm.value = await invoke(MESSAGE_APIS.QUERY_PROXY);
+};
+const onSaveProxy = async (enable: boolean) => {
+  const form: Proxy = { ...proxyForm.value };
+  if (enable) {
+    form.isEnable = enable;
+  }
+  await invoke(MESSAGE_APIS.UPDATE_PROXY, { entity: form });
+  queryProxy();
+};
+const onEnableProxy = async (enable: boolean) => {
+  await invoke(MESSAGE_APIS.ENABLE_PROXY, { enable });
+  queryProxy();
+};
 
 const apiConfigs = reactive<Array<ApiConfig>>([
   {

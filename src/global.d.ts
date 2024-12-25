@@ -17,12 +17,12 @@ declare interface Message {
 
 declare interface Proxy {
   id: number;
-  proxyAddress?: string;
-  host: string;
-  port: number;
-  username: string;
-  password: string;
+  host: string | null;
+  port: number | null;
+  username: string | null;
+  password: string | null;
   isEnable: boolean;
+  authentication: boolean;
 }
 
 declare interface ApiConfig {

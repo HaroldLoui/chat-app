@@ -58,10 +58,12 @@ const PROXY_TABLE_NAME: &'static str = "proxy";
 const CRATE_PROXY_TABLE_SQL: &'static str = "
 CREATE TABLE proxy (
     id INTEGER PRIMARY KEY,
-    proxy_address TEXT NULL,
+    host TEXT NULL,
+    port INTEGER NULL,
     username TEXT NULL,
     password TEXT NULL,
-    is_enable INTEGER NOT NULL DEFAULT 0
+    is_enable INTEGER NOT NULL DEFAULT 0,
+    authentication INTEGER NOT NULL DEFAULT 0
 );
 ";
 
