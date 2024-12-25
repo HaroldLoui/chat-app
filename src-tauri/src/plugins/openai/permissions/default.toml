@@ -2,4 +2,10 @@
 
 [default]
 description = "Default permissions for the plugin"
-permissions = []
+permissions = [
+    "allow-send-message",
+    "allow-delete-api-config",
+    "allow-insert-api-config",
+    "allow-list-api-config",
+    "allow-set-default-config",
+]

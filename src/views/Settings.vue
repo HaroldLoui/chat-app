@@ -68,10 +68,16 @@
         </div>
         <div v-if="showConfigForm" class="form-item" style="gap: 10px">
           <div style="width: 40%">
-            <vs-input style="width: 100%" v-model="configForm.url" label="接口地址" />
+            <vs-input style="width: 100%" v-model="configForm.url" label="接口地址" placeholder="请输入接口地址" />
           </div>
           <div style="width: 40%">
-            <vs-input style="width: 100%" v-model="configForm.key" label="密钥" type="password" />
+            <vs-input
+              style="width: 100%"
+              v-model="configForm.key"
+              label="密钥"
+              type="password"
+              placeholder="请输入接口密钥"
+            />
           </div>
           <div class="btns">
             <text-button @click="handleSaveConfig(true)">保存并默认</text-button>
@@ -88,7 +94,7 @@
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { invoke } from "@tauri-apps/api/core";
-import { MESSAGE_APIS } from "../constants";
+import { CONFIG_APIS, PROXY_APIS } from "../constants";
 
 import TextButton from "../components/TextButton.vue";
 import MyConfirm from "../components/Confirm.vue";
@@ -100,6 +106,7 @@ const goBack = () => {
 
 onMounted(() => {
   queryProxy();
+  queryConfigs();
 });
 
 const proxyForm = ref<Proxy>({
@@ -112,35 +119,29 @@ const proxyForm = ref<Proxy>({
   authentication: false,
 });
 const queryProxy = async () => {
-  proxyForm.value = await invoke(MESSAGE_APIS.QUERY_PROXY);
+  proxyForm.value = await invoke(PROXY_APIS.QUERY_PROXY);
 };
 const onSaveProxy = async (enable: boolean) => {
   const form: Proxy = { ...proxyForm.value };
   if (enable) {
     form.isEnable = enable;
   }
-  await invoke(MESSAGE_APIS.UPDATE_PROXY, { entity: form });
+  await invoke(PROXY_APIS.UPDATE_PROXY, { entity: form });
   queryProxy();
 };
 const onEnableProxy = async (enable: boolean) => {
-  await invoke(MESSAGE_APIS.ENABLE_PROXY, { enable });
+  await invoke(PROXY_APIS.ENABLE_PROXY, { enable });
   queryProxy();
 };
 
-const apiConfigs = reactive<Array<ApiConfig>>([
-  {
-    id: 1,
-    url: "https://asdsadsadadsaopenai.com",
-    key: "123",
-    isDefault: true,
-  },
-  {
-    id: 2,
-    url: "https://openai.com",
-    key: "123",
-    isDefault: false,
-  },
-]);
+const apiConfigs = ref<Array<ApiConfig>>();
+const queryConfigs = async () => {
+  const list: Array<ApiConfig> = await invoke(CONFIG_APIS.LIST);
+  if (list.length === 0) {
+    showConfigForm.value = true;
+  }
+  apiConfigs.value = list;
+};
 const configForm = reactive<ApiConfig>({
   id: 0,
   url: null,
@@ -155,10 +156,12 @@ const onInsertConfig = () => {
   configForm.isDefault = false;
   showConfigForm.value = true;
 };
-const handleSaveConfig = (setDefault: boolean) => {
+const handleSaveConfig = async (setDefault: boolean) => {
   configForm.isDefault = setDefault;
-  console.log("保存成功");
+  const form: ApiConfig = { ...configForm };
+  await invoke(CONFIG_APIS.ADD, { eneity: form });
   showConfigForm.value = false;
+  queryConfigs();
 };
 
 const myConfirm = ref();
@@ -170,13 +173,15 @@ const handleConfig = (id: number, type: boolean) => {
   const msg = type ? "确认设置该配置为默认配置？" : "删除后不可恢复，确定删除当前接口配置？";
   myConfirm.value.show(msg);
 };
-const invokeConfig = () => {
+const invokeConfig = async () => {
   if (chooseConfig.value !== null) {
     if (handleType.value) {
-      console.log("调用设置默认接口", chooseConfig.value);
+      await invoke(CONFIG_APIS.SET_DEFAULT, { id: chooseConfig.value });
     } else {
-      console.log("调用删除接口", chooseConfig.value);
+      await invoke(CONFIG_APIS.DEL, { id: chooseConfig.value });
     }
+    queryConfigs();
+    myConfirm.value.close();
     chooseConfig.value = null;
   }
 };

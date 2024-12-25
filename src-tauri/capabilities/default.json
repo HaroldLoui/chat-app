@@ -8,6 +8,6 @@
     "shell:allow-open",
     "chat-sqlite:default",
     "chat-request:default",
-    "chat-openai:allow-send-message"
+    "chat-openai:default"
   ]
 }
