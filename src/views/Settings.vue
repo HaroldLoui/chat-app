@@ -52,31 +52,27 @@
         <div class="form-item">
           <vs-button color="primary" type="flat" @click="onInsertConfig"> 新增 </vs-button>
         </div>
-        <div class="form-item" v-for="config in apiConfigs" :key="config.id">
-          <div style="width: 38%">
-            <vs-input v-model="config.url" label="接口地址" />
+        <div class="form-item" v-for="config in apiConfigs" :key="config.id" style="gap: 10px">
+          <div style="width: 40%">
+            <vs-input style="width: 100%" v-model="config.url" readonly label="接口地址" />
           </div>
-          <div style="width: 38%">
-            <vs-input v-model="config.key" label="密钥" type="password" />
+          <div style="width: 40%">
+            <vs-input style="width: 100%" v-model="config.key" readonly label="密钥" type="password" />
           </div>
-          <div style="width: 12%">
+          <div class="btns">
             <text-button :disabled="config.isDefault" @click="handleConfig(config.id, true)">设为默认</text-button>
-          </div>
-          <div style="width: 12%">
             <text-button type="danger" @click="handleConfig(config.id, false)">删除</text-button>
           </div>
         </div>
-        <div v-if="showConfigForm" class="form-item">
-          <div style="width: 38%">
-            <vs-input v-model="configForm.url" label="接口地址" />
+        <div v-if="showConfigForm" class="form-item" style="gap: 10px">
+          <div style="width: 40%">
+            <vs-input style="width: 100%" v-model="configForm.url" label="接口地址" />
           </div>
-          <div style="width: 38%">
-            <vs-input v-model="configForm.key" label="密钥" type="password" />
+          <div style="width: 40%">
+            <vs-input style="width: 100%" v-model="configForm.key" label="密钥" type="password" />
           </div>
-          <div style="width: 14%">
+          <div class="btns">
             <text-button @click="handleSaveConfig(true)">保存并默认</text-button>
-          </div>
-          <div style="width: 10%">
             <text-button @click="handleSaveConfig(false)">仅保存</text-button>
           </div>
         </div>
@@ -111,14 +107,14 @@ const proxyForm = reactive<Proxy>({
 const apiConfigs = reactive<Array<ApiConfig>>([
   {
     id: 1,
-    url: null,
-    key: null,
+    url: "https://asdsadsadadsaopenai.com",
+    key: "123",
     isDefault: true,
   },
   {
     id: 2,
-    url: null,
-    key: null,
+    url: "https://openai.com",
+    key: "123",
     isDefault: false,
   },
 ]);
@@ -237,6 +233,15 @@ const invokeConfig = () => {
         .form-item-input {
           margin-left: 10px;
           width: calc(100% - 70px);
+        }
+
+        .btns {
+          width: 20%;
+          display: flex;
+          height: 100%;
+          align-items: center;
+          justify-content: space-around;
+          padding-top: 26px;
         }
       }
     }
