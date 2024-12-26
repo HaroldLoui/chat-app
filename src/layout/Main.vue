@@ -19,9 +19,8 @@
       </div>
     </div>
     <div class="chat-messages" id="scrollableContent">
-      <div v-if="hasNextPage" class="load-more">加载更多...</div>
-      <MessageBox :value="meMessage"></MessageBox>
-      <MessageBox :value="aiMessage"></MessageBox>
+      <div v-if="hasNextPage" class="load-more" @click="onLoadMore">加载更多...</div>
+      <MessageBox v-for="message in messageList" :key="message.id" :value="message"></MessageBox>
     </div>
     <div class="chat-sender">
       <div class="sender-toolbar">
@@ -38,7 +37,7 @@
       <div class="sender-box">
         <textarea class="content-input">{{ senderInfo }}</textarea>
         <div class="sender-btn">
-          <vs-button type="relief" @click="onSendMessage">
+          <vs-button :loading="loading" type="relief" @click="onSendMessage">
             <i class="bx bxs-paper-plane"></i>
             发送
           </vs-button>
@@ -49,15 +48,25 @@
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onMounted, reactive, ref } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import MessageBox from "../components/MessageBox.vue";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { CHAT_BOX_APIS, MESSAGE_APIS } from "../constants";
 
 const props = defineProps<{
   value: ChatBox;
 }>();
+watch(
+  () => props.value.id,
+  () => {
+    console.log("213123");
+    pageNum.value = 1;
+    messageList.value = [];
+    getMessageList();
+  }
+);
+
 const editMode = ref<boolean>(false);
 const updateTitleInput = ref();
 const enterEditMode = () => {
@@ -76,17 +85,28 @@ const handleEditTitle = async () => {
 const hasNextPage = ref<boolean>(false);
 onMounted(() => {
   const content = document.getElementById("scrollableContent")!;
-  scrollToTopListener(content);
   nextTick(() => {
     scrollToBottom(content);
     hasNextPage.value = true;
   });
-  listen("chat:message://received", (event) => {
-    console.log(event.payload);
-    aiMessage.content = aiMessage.content + event.payload;
+  listenReceived(content);
+  pageNum.value = 1;
+  messageList.value = [];
+  getMessageList();
+});
+const unlisten = ref<Promise<UnlistenFn>>();
+onUnmounted(async () => {
+  if (unlisten.value) {
+    const f = unlisten.value;
+    (await f)();
+  }
+});
+const listenReceived = (content: HTMLElement) => {
+  unlisten.value = listen<string>("chat:message://received", async (event) => {
+    await insertMessage("AI", event.payload, props.value.id);
     scrollToBottom(content);
   });
-});
+};
 
 const scrollToBottom = (content: HTMLElement) => {
   setTimeout(() => {
@@ -94,45 +114,32 @@ const scrollToBottom = (content: HTMLElement) => {
   }, 200);
 };
 
-const isAtTop = ref<boolean>(false);
-const scrollToTopListener = (content: HTMLElement) => {
-  content.addEventListener("scroll", () => {
-    if (content.scrollTop === 0) {
-      if (isAtTop.value) {
-        // 滚动到顶部触发事件
-        console.log("已经到达顶部，无法继续滚动。");
-        messageCount.value += 4;
-        isAtTop.value = false;
-      } else {
-        isAtTop.value = true;
-      }
-    }
-  });
+const messageList = ref<Message[]>([]);
+const pageNum = ref<number>(1);
+const onLoadMore = () => {
+  pageNum.value += 1;
+  getMessageList();
+};
+const getMessageList = async () => {
+  const list: Message[] = await invoke(MESSAGE_APIS.LIST_MESSAGE, { chat_id: props.value.id, page_num: pageNum.value });
+  hasNextPage.value = list.length >= 10;
+  messageList.value = list.concat(messageList.value);
 };
 
-const messageCount = ref<number>(1);
-const md = ref<string>(
-  "# Tauri + Vue + TypeScript\nThis template should help get you starteemplate should help get you starteemplate should help get you starteemplate should help get you starteemplate should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.\n#####1"
-);
-const aiMessage = reactive<Message>({
-  id: "1",
-  chatId: "1",
-  sender: "AI",
-  content: md.value,
-  createTime: "2024年11月30日 15:35:50",
-});
-const meMessage = reactive<Message>({
-  id: "2",
-  chatId: "1",
-  sender: "ME",
-  content: "#12313",
-  createTime: "2024年11月30日 15:35:50",
-});
-
 const senderInfo = ref<string>("你好");
-
+const loading = ref<boolean>(false);
 const onSendMessage = async () => {
-  await invoke(MESSAGE_APIS.SEND_MESSAGE, { content: senderInfo.value, chat_id: "1" });
+  loading.value = true;
+  const chatId = props.value.id;
+  const content = senderInfo.value;
+  const sender = "ME";
+  await invoke(MESSAGE_APIS.SEND_MESSAGE, { content, chat_id: chatId });
+  await insertMessage(sender, content, chatId);
+  loading.value = false;
+};
+
+const insertMessage = async (sender: "AI" | "ME", content: string, chatId: string) => {
+  await invoke(MESSAGE_APIS.ADD_MESSAGE, { chat_id: chatId, content, sender });
 };
 </script>
 

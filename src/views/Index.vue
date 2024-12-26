@@ -4,13 +4,13 @@
       <Siderbar @change-chat="handleChangeChat"></Siderbar>
     </div>
     <div class="app-main">
-      <Main :value="activeChat"></Main>
+      <Main v-if="activeChat" :value="activeChat"></Main>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, ref } from "vue";
 import { open } from "@tauri-apps/plugin-shell";
 import Siderbar from "../layout/Siderbar.vue";
 import Main from "../layout/Main.vue";
@@ -40,25 +40,7 @@ const isUrl = (url: string | null) => {
   return url.startsWith("https://") || url.startsWith("http://");
 };
 
-const getNow = () => {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-
-  return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
-};
-
-const blankChat = reactive<ChatBox>({
-  id: "",
-  title: "默认对话",
-  count: 0,
-  createTime: getNow(),
-});
-const activeChat = ref<ChatBox>(blankChat);
+const activeChat = ref<ChatBox | null>(null);
 const handleChangeChat = (value: ChatBox) => {
   if (value) {
     activeChat.value = value;

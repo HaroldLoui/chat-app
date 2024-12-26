@@ -41,11 +41,13 @@ pub async fn send_message<R: Runtime>(
     conn: State<'_, Mutex<Connection>>,
     content: String,
 ) -> Result<(), String> {
-    let app_clone = app.clone();
     let client = client.lock().unwrap().clone();
-    let conn = conn.lock().unwrap();
-    let config = mapper::query_default_config(&conn).unwrap_or_default();
-    tokio::spawn(async move {
+    let config = {
+        let conn = conn.lock().unwrap();
+        mapper::query_default_config(&conn).unwrap_or_default()
+    };
+    let app_clone = app.clone();
+    let jh = tokio::spawn(async move {
         let url = config.url.unwrap_or_default();
         if url.is_empty() {
             let _ = app_clone.emit("chat:message://received", "请配置接口地址。");
@@ -93,6 +95,7 @@ pub async fn send_message<R: Runtime>(
             },
         }
     });
+    jh.await.unwrap();
     Ok(())
 }
 

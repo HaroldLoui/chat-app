@@ -69,6 +69,7 @@ impl Display for Sender {
 pub struct Message {
     #[serde(with = "crate::big_number_serializer")]
     pub id: i64,
+    #[serde(with = "crate::big_number_serializer")]
     pub chat_id: i64,
     pub sender: Sender,
     pub content: String,

@@ -61,6 +61,8 @@ onMounted(async () => {
   await handleSearch();
   if (chatList.value.length > 0) {
     emits("changeChat", chatList.value[0]);
+  } else {
+    emits("changeChat", null);
   }
 });
 

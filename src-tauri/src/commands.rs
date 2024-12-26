@@ -35,7 +35,6 @@ pub fn insert_message(
         content,
         ..Message::from(sender)
     };
-
     mapper::insert_message(&conn, message).map_err(|e| e.to_string())
 }
 
