@@ -35,7 +35,7 @@
         </vs-button>
       </div>
       <div class="sender-box">
-        <textarea class="content-input">{{ senderInfo }}</textarea>
+        <textarea v-model="senderInfo" class="content-input"></textarea>
         <div class="sender-btn">
           <vs-button :loading="loading" type="relief" @click="onSendMessage">
             <i class="bx bxs-paper-plane"></i>
@@ -82,14 +82,16 @@ const handleEditTitle = async () => {
   editMode.value = false;
 };
 
+const contentDom = ref<HTMLElement>();
 const hasNextPage = ref<boolean>(false);
 onMounted(() => {
   const content = document.getElementById("scrollableContent")!;
+  contentDom.value = content;
   nextTick(() => {
     scrollToBottom(content);
     hasNextPage.value = true;
   });
-  listenReceived(content);
+  listenReceived();
   pageNum.value = 1;
   messageList.value = [];
   getMessageList();
@@ -101,10 +103,9 @@ onUnmounted(async () => {
     (await f)();
   }
 });
-const listenReceived = (content: HTMLElement) => {
+const listenReceived = () => {
   unlisten.value = listen<string>("chat:message://received", async (event) => {
     await insertMessage("AI", event.payload, props.value.id);
-    scrollToBottom(content);
   });
 };
 
@@ -126,20 +127,25 @@ const getMessageList = async () => {
   messageList.value = list.concat(messageList.value);
 };
 
-const senderInfo = ref<string>("你好");
+const senderInfo = ref<string>("");
 const loading = ref<boolean>(false);
 const onSendMessage = async () => {
-  loading.value = true;
   const chatId = props.value.id;
   const content = senderInfo.value;
   const sender = "ME";
-  await invoke(MESSAGE_APIS.SEND_MESSAGE, { content, chat_id: chatId });
   await insertMessage(sender, content, chatId);
+  senderInfo.value = "";
+  loading.value = true;
+  await invoke(MESSAGE_APIS.SEND_MESSAGE, { content, chat_id: chatId });
   loading.value = false;
 };
 
 const insertMessage = async (sender: "AI" | "ME", content: string, chatId: string) => {
-  await invoke(MESSAGE_APIS.ADD_MESSAGE, { chat_id: chatId, content, sender });
+  const message = await invoke<Message>(MESSAGE_APIS.ADD_MESSAGE, { chat_id: chatId, content, sender });
+  messageList.value.push(message);
+  if (contentDom.value) {
+    scrollToBottom(contentDom.value);
+  }
 };
 </script>
 

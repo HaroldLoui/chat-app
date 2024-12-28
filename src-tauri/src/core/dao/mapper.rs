@@ -40,7 +40,7 @@ pub fn update_chat_box_title(conn: &Connection, id: i64, title: String) -> Resul
     Ok(())
 }
 
-pub fn increament_chat_box_count(conn: &Connection, id: i64) -> Result<()> {
+fn increament_chat_box_count(conn: &Connection, id: i64) -> Result<()> {
     conn.execute("UPDATE chat_box SET count = count + 1 WHERE id = ?1", (id,))?;
     Ok(())
 }
@@ -65,11 +65,29 @@ pub fn insert_message(conn: &Connection, message: Message) -> Result<()> {
     Ok(())
 }
 
+pub fn query_message_by_id(conn: &Connection, id: i64) -> Result<Message> {
+    let sql = "SELECT id, chat_id, sender, content, create_time FROM message WHERE id = :id";
+    let mut stmt = conn.prepare(sql)?;
+    let message = stmt.query_row(
+        named_params! { ":id": id }, 
+        |row| {
+            Ok(Message {
+                id: row.get(0)?,
+                chat_id: row.get(1)?,
+                sender: row.get(2)?,
+                content: row.get(3)?,
+                create_time: row.get(4)?,
+            })
+        }
+    )?;
+    Ok(message)
+}
+
 pub fn query_message_list(conn: &Connection, chat_id: i64, cursor: usize) -> Result<Vec<Message>> {
     let sql = "
         SELECT id, chat_id, sender, content, create_time FROM message 
         WHERE chat_id = :chat_id 
-        ORDER BY create_time DESC
+        ORDER BY create_time DESC, id DESC
         LIMIT 10 OFFSET :cursor
     ";
     let mut stmt = conn.prepare(sql)?;

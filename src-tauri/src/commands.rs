@@ -28,14 +28,16 @@ pub fn insert_message(
     chat_id: String,
     content: String,
     sender: Sender,
-) -> Result<(), String> {
+) -> Result<Message, String> {
     let conn = conn.lock().unwrap();
     let message = Message {
         chat_id: i64::from_str_radix(&chat_id, 10).unwrap_or_default(),
         content,
         ..Message::from(sender)
     };
-    mapper::insert_message(&conn, message).map_err(|e| e.to_string())
+    let id = message.id.clone();
+    mapper::insert_message(&conn, message).map_err(|e| e.to_string())?;
+    mapper::query_message_by_id(&conn, id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
