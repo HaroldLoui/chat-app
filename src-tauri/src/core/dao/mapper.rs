@@ -46,6 +46,7 @@ fn increament_chat_box_count(conn: &Connection, id: i64) -> Result<()> {
 }
 
 pub fn delete_chat_box(conn: &Connection, id: i64) -> Result<()> {
+    conn.execute("DELETE FROM message WHERE chat_id = ?1", (id,))?;
     conn.execute("DELETE FROM chat_box WHERE id = ?1", (id,))?;
     Ok(())
 }
@@ -61,7 +62,9 @@ pub fn insert_message(conn: &Connection, message: Message) -> Result<()> {
             &message.create_time,
         ),
     )?;
-    increament_chat_box_count(conn, message.chat_id)?;
+    if message.sender == Sender::AI {
+        increament_chat_box_count(conn, message.chat_id)?;
+    }
     Ok(())
 }
 
@@ -83,16 +86,15 @@ pub fn query_message_by_id(conn: &Connection, id: i64) -> Result<Message> {
     Ok(message)
 }
 
-pub fn query_message_list(conn: &Connection, chat_id: i64, cursor: usize) -> Result<Vec<Message>> {
+pub fn query_message_list(conn: &Connection, chat_id: i64) -> Result<Vec<Message>> {
     let sql = "
         SELECT id, chat_id, sender, content, create_time FROM message 
         WHERE chat_id = :chat_id 
-        ORDER BY create_time DESC, id DESC
-        LIMIT 10 OFFSET :cursor
+        ORDER BY DATETIME(create_time) DESC, sender
     ";
     let mut stmt = conn.prepare(sql)?;
     let iter = stmt.query_map(
-        named_params! { ":chat_id": chat_id, ":cursor": cursor },
+        named_params! { ":chat_id": chat_id },
         |row| {
             Ok(Message {
                 id: row.get(0)?,

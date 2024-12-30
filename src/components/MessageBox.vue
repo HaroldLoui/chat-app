@@ -68,6 +68,7 @@ defineProps<{ value: Message }>();
       background-color: rgba(0, 0, 0, 0.05);
       box-sizing: border-box;
       justify-content: flex-end;
+      transition: all 0.5s ease-in-out;
 
       .md-preview {
         border-radius: 10px;

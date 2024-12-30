@@ -19,7 +19,7 @@
       </div>
     </div>
     <div class="chat-messages" id="scrollableContent">
-      <div v-if="hasNextPage" class="load-more" @click="onLoadMore">加载更多...</div>
+      <!-- <div v-if="hasNextPage" class="load-more" @click="onLoadMore">加载更多...</div> -->
       <MessageBox v-for="message in messageList" :key="message.id" :value="message"></MessageBox>
     </div>
     <div class="chat-sender">
@@ -35,7 +35,12 @@
         </vs-button>
       </div>
       <div class="sender-box">
-        <textarea v-model="senderInfo" class="content-input"></textarea>
+        <textarea
+          v-model="senderInfo"
+          class="content-input"
+          :placeholder="sendPlaceholder"
+          v-on:keydown="onCtrlEnterDown"
+        ></textarea>
         <div class="sender-btn">
           <vs-button :loading="loading" type="relief" @click="onSendMessage">
             <i class="bx bxs-paper-plane"></i>
@@ -48,7 +53,7 @@
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import MessageBox from "../components/MessageBox.vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
@@ -60,8 +65,6 @@ const props = defineProps<{
 watch(
   () => props.value.id,
   () => {
-    console.log("213123");
-    pageNum.value = 1;
     messageList.value = [];
     getMessageList();
   }
@@ -83,16 +86,10 @@ const handleEditTitle = async () => {
 };
 
 const contentDom = ref<HTMLElement>();
-const hasNextPage = ref<boolean>(false);
 onMounted(() => {
   const content = document.getElementById("scrollableContent")!;
   contentDom.value = content;
-  nextTick(() => {
-    scrollToBottom(content);
-    hasNextPage.value = true;
-  });
   listenReceived();
-  pageNum.value = 1;
   messageList.value = [];
   getMessageList();
 });
@@ -116,33 +113,52 @@ const scrollToBottom = (content: HTMLElement) => {
 };
 
 const messageList = ref<Message[]>([]);
-const pageNum = ref<number>(1);
-const onLoadMore = () => {
-  pageNum.value += 1;
-  getMessageList();
-};
 const getMessageList = async () => {
-  const list: Message[] = await invoke(MESSAGE_APIS.LIST_MESSAGE, { chat_id: props.value.id, page_num: pageNum.value });
-  hasNextPage.value = list.length >= 10;
-  messageList.value = list.concat(messageList.value);
+  messageList.value = await invoke(MESSAGE_APIS.LIST_MESSAGE, { chat_id: props.value.id });
+  nextTick(() => {
+    if (contentDom.value) {
+      scrollToBottom(contentDom.value);
+    }
+  });
 };
 
+const sendPlaceholder = ref<string>("按“Ctrl + Enter”进行发送，“Enter”换行");
+const onCtrlEnterDown = (event: KeyboardEvent) => {
+  if (event.ctrlKey && event.key === "Enter") {
+    onSendMessage();
+  }
+};
 const senderInfo = ref<string>("");
 const loading = ref<boolean>(false);
+const aiMessage = reactive<Message>({
+  id: "",
+  chatId: props.value.id,
+  sender: "AI",
+  content: "思考中...",
+  createTime: "",
+});
 const onSendMessage = async () => {
-  const chatId = props.value.id;
   const content = senderInfo.value;
+  if (!content) {
+    return;
+  }
+  const chatId = props.value.id;
   const sender = "ME";
   await insertMessage(sender, content, chatId);
   senderInfo.value = "";
   loading.value = true;
+  messageList.value.push(aiMessage);
   await invoke(MESSAGE_APIS.SEND_MESSAGE, { content, chat_id: chatId });
   loading.value = false;
 };
 
 const insertMessage = async (sender: "AI" | "ME", content: string, chatId: string) => {
   const message = await invoke<Message>(MESSAGE_APIS.ADD_MESSAGE, { chat_id: chatId, content, sender });
-  messageList.value.push(message);
+  if (sender === "ME") {
+    messageList.value.push(message);
+  } else {
+    messageList.value[messageList.value.length - 1] = message;
+  }
   if (contentDom.value) {
     scrollToBottom(contentDom.value);
   }

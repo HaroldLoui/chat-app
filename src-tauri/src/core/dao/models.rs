@@ -30,7 +30,7 @@ impl Default for ChatBox {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum Sender {
     AI,
     ME,

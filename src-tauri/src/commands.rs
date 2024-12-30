@@ -10,16 +10,10 @@ use crate::core::models::*;
 pub fn list_message(
     conn: State<'_, Mutex<Connection>>,
     chat_id: String,
-    page_num: usize,
 ) -> Result<Vec<Message>, String> {
     let conn = conn.lock().unwrap();
-    let cursor = (page_num - 1) * 10;
-    mapper::query_message_list(
-        &conn,
-        i64::from_str_radix(&chat_id, 10).unwrap_or_default(),
-        cursor,
-    )
-    .map_err(|e| e.to_string())
+    mapper::query_message_list(&conn, i64::from_str_radix(&chat_id, 10).unwrap_or_default())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -48,13 +42,20 @@ pub fn insert_chat_box(conn: State<'_, Mutex<Connection>>) -> Result<(), String>
 }
 
 #[tauri::command]
-pub fn list_chat_box(conn: State<'_, Mutex<Connection>>, title: String) -> Result<Vec<ChatBox>, String> {
+pub fn list_chat_box(
+    conn: State<'_, Mutex<Connection>>,
+    title: String,
+) -> Result<Vec<ChatBox>, String> {
     let conn = conn.lock().unwrap();
     mapper::query_chat_box_list(&conn, Some(title)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn update_chat_box_title(conn: State<'_, Mutex<Connection>>, id: String, title: String) -> Result<(), String> {
+pub fn update_chat_box_title(
+    conn: State<'_, Mutex<Connection>>,
+    id: String,
+    title: String,
+) -> Result<(), String> {
     let conn = conn.lock().unwrap();
     mapper::update_chat_box_title(
         &conn,

@@ -1,6 +1,6 @@
 use std::sync::Mutex;
 
-use anyhow::{bail, Result as AnyhowResult};
+use anyhow::{bail, Result as AR};
 use rusqlite::Connection;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, Runtime, State};
@@ -83,14 +83,12 @@ pub async fn send_message<R: Runtime>(
     Ok(())
 }
 
-async fn parse_response(result: Result<Response, Error>) -> AnyhowResult<String> {
+async fn parse_response(result: Result<Response, Error>) -> AR<String> {
     let response = result?;
     let text = response.text().await?;
     match parse_text(&text) {
         Some(api_response) => Ok(api_response),
-        None => {
-            bail!("解析响应内容失败: {}", text)
-        }
+        None => bail!("解析响应内容失败: {}", text)
     }
 }
 
