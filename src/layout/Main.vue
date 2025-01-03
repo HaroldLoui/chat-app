@@ -203,7 +203,6 @@ const onSendMessage = async () => {
 };
 
 const insertMessage = async (sender: "AI" | "ME", content: string, chatId: string) => {
-  console.log("insert: ", sender, content);
   const message = await invoke<Message>(MESSAGE_APIS.ADD_MESSAGE, { chat_id: chatId, content, sender });
   if (sender === "ME") {
     messageList.value.push(message);
