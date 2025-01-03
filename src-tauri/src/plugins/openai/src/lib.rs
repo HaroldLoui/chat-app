@@ -14,6 +14,10 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::insert_api_config,
             commands::set_default_config,
             commands::delete_api_config,
+            commands::query_enable_stream,
+            commands::update_enable_stream,
+            commands::query_associated_context,
+            commands::update_associated_context,
         ])
         .build()
 }

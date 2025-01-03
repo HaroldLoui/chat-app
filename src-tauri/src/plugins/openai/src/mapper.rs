@@ -54,7 +54,12 @@ pub fn query_enable_stream(conn: &Connection) -> Result<bool> {
     Ok(stream)
 }
 
-#[allow(unused)]
+pub fn update_enable_stream(conn: &Connection, stream: bool) -> Result<()> {
+    let sql = "UPDATE global_config SET enable_stream = ?1 WHERE id = 0";
+    conn.execute(sql, (stream,))?;
+    Ok(())
+}
+
 pub fn query_associated_context(conn: &Connection) -> Result<bool> {
     let sql = "SELECT associated_context FROM global_config WHERE id = 0";
     let mut stmt = conn.prepare(sql)?;
@@ -62,6 +67,12 @@ pub fn query_associated_context(conn: &Connection) -> Result<bool> {
         Ok(row.get(0)?)
     })?;
     Ok(context)
+}
+
+pub fn update_associated_context(conn: &Connection, context: bool) -> Result<()> {
+    let sql = "UPDATE global_config SET associated_context = ?1 WHERE id = 0";
+    conn.execute(sql, (context,))?;
+    Ok(())
 }
 
 pub fn insert_api_config(conn: &Connection, config: ApiConfig) -> Result<()> {

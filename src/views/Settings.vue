@@ -98,8 +98,8 @@
       <div class="form-box">
         <div class="form-title">其它设置</div>
         <div class="form-item">
-          <vs-checkbox v-model="enableStream"> 流式传输 </vs-checkbox>
-          <vs-checkbox v-model="associatedContext"> 联系上下文 </vs-checkbox>
+          <vs-checkbox v-model="enableStream" @change="onStreamChange"> 流式传输 </vs-checkbox>
+          <vs-checkbox v-model="associatedContext" @change="onContextChange"> 联系上下文 </vs-checkbox>
         </div>
       </div>
     </div>
@@ -111,7 +111,7 @@
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { invoke } from "@tauri-apps/api/core";
-import { CONFIG_APIS, PROXY_APIS } from "../constants";
+import { API_CONFIG_APIS, GLOBAL_CONFIG_APIS, PROXY_APIS } from "../constants";
 
 import TextButton from "../components/TextButton.vue";
 import MyConfirm from "../components/Confirm.vue";
@@ -125,6 +125,8 @@ const goBack = () => {
 onMounted(() => {
   queryProxy();
   queryConfigs();
+  queryStream();
+  queryContext();
 });
 
 const proxyForm = ref<Proxy>({
@@ -172,7 +174,7 @@ const onTestProxy = () => {
 
 const apiConfigs = ref<Array<ApiConfig>>();
 const queryConfigs = async () => {
-  const list: Array<ApiConfig> = await invoke(CONFIG_APIS.LIST);
+  const list: Array<ApiConfig> = await invoke(API_CONFIG_APIS.LIST);
   if (list.length === 0) {
     showConfigForm.value = true;
   }
@@ -195,7 +197,7 @@ const onInsertConfig = () => {
 const handleSaveConfig = async (setDefault: boolean) => {
   configForm.isDefault = setDefault;
   const form: ApiConfig = { ...configForm };
-  await invoke(CONFIG_APIS.ADD, { eneity: form });
+  await invoke(API_CONFIG_APIS.ADD, { eneity: form });
   showConfigForm.value = false;
   queryConfigs();
 };
@@ -212,9 +214,9 @@ const handleConfig = (id: number, type: boolean) => {
 const invokeConfig = async () => {
   if (chooseConfig.value !== null) {
     if (handleType.value) {
-      await invoke(CONFIG_APIS.SET_DEFAULT, { id: chooseConfig.value });
+      await invoke(API_CONFIG_APIS.SET_DEFAULT, { id: chooseConfig.value });
     } else {
-      await invoke(CONFIG_APIS.DEL, { id: chooseConfig.value });
+      await invoke(API_CONFIG_APIS.DEL, { id: chooseConfig.value });
     }
     queryConfigs();
     myConfirm.value.close();
@@ -223,7 +225,19 @@ const invokeConfig = async () => {
 };
 
 const enableStream = ref<boolean>(false);
+const queryStream = async () => {
+  enableStream.value = await invoke(GLOBAL_CONFIG_APIS.QUERY_STREAM);
+};
+const onStreamChange = async () => {
+  await invoke(GLOBAL_CONFIG_APIS.UPDATE_STREAM, { stream: enableStream.value });
+};
 const associatedContext = ref<boolean>(false);
+const queryContext = async () => {
+  associatedContext.value = await invoke(GLOBAL_CONFIG_APIS.QUERY_CONTEXT);
+};
+const onContextChange = async () => {
+  await invoke(GLOBAL_CONFIG_APIS.UPDATE_CONTEXT, { stream: associatedContext.value });
+};
 </script>
 
 <style lang="scss" scoped>

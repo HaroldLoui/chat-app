@@ -10,7 +10,12 @@
     </div>
     <div class="flex-content" :class="{ 'flex-end': value.sender === 'ME' }">
       <div class="message-content">
-        <MdPreview class="md-preview" :editorId="'preview-only-' + value.id" :modelValue="value.content" />
+        <MdPreview
+          class="md-preview"
+          :editorId="'preview-only-' + value.id"
+          :modelValue="value.content"
+          :codeFoldable="false"
+        />
       </div>
     </div>
   </div>

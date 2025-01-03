@@ -4,6 +4,10 @@ const COMMANDS: &[&str] = &[
     "insert_api_config",
     "set_default_config",
     "delete_api_config",
+    "query_enable_stream",
+    "update_enable_stream",
+    "query_associated_context",
+    "update_associated_context",
 ];
 
 fn main() {

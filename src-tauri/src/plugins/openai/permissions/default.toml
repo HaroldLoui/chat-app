@@ -8,4 +8,8 @@ permissions = [
     "allow-insert-api-config",
     "allow-list-api-config",
     "allow-set-default-config",
+    "allow-query-enable-stream",
+    "allow-update-enable-stream",
+    "allow-query-associated-context",
+    "allow-update-associated-context",
 ]

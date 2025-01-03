@@ -1,4 +1,5 @@
 use std::sync::Mutex;
+use std::time::Duration;
 
 use anyhow::{bail, Result as AR};
 use rusqlite::Connection;
@@ -37,6 +38,32 @@ pub fn delete_api_config(conn: State<'_, Mutex<Connection>>, id: u32) -> Result<
     mapper::delete_api_config(&conn, id).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub fn query_enable_stream(conn: State<'_, Mutex<Connection>>) -> Result<bool, String> {
+    let conn = conn.lock().unwrap();
+    mapper::query_enable_stream(&conn).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_enable_stream(conn: State<'_, Mutex<Connection>>, stream: bool) -> Result<(), String> {
+    let conn = conn.lock().unwrap();
+    mapper::update_enable_stream(&conn, stream).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn query_associated_context(conn: State<'_, Mutex<Connection>>) -> Result<bool, String> {
+    let conn = conn.lock().unwrap();
+    mapper::query_associated_context(&conn).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_associated_context(conn: State<'_, Mutex<Connection>>, context: bool) -> Result<(), String> {
+    let conn = conn.lock().unwrap();
+    mapper::update_associated_context(&conn, context).map_err(|e| e.to_string())
+}
+
+const MESSAGE_EVENT_NAME: &str = "chat:message://received";
+const STREAM_MESSAGE_EVENT_NAME: &str = "chat:message://stream_received";
 #[tauri::command(rename_all = "snake_case")]
 pub async fn send_message<R: Runtime>(
     app: AppHandle<R>,
@@ -52,12 +79,12 @@ pub async fn send_message<R: Runtime>(
     };
     let url = config.url.unwrap_or_default();
     if url.is_empty() {
-        let _ = app.emit("chat:message://received", "请配置接口地址。");
+        let _ = app.emit(MESSAGE_EVENT_NAME, "请配置接口地址。");
         return Ok(());
     }
     let key = config.key.unwrap_or_default();
     if key.is_empty() {
-        let _ = app.emit("chat:message://received", "请配置密钥。");
+        let _ = app.emit(MESSAGE_EVENT_NAME, "请配置密钥。");
         return Ok(());
     }
     let client = client.lock().unwrap().clone();
@@ -74,12 +101,28 @@ pub async fn send_message<R: Runtime>(
         .json(&body)
         .send()
         .await;
-    match parse_response(res).await {
-        Ok(response) => {
-            let _ = app.emit("chat:message://received", response);
+    if stream {
+        match parse_stream_response(res).await {
+            Ok(contents) => {
+                for content in contents {
+                    let _ = app.emit(STREAM_MESSAGE_EVENT_NAME, content);
+                    std::thread::sleep(Duration::from_millis(100));
+                }
+            },
+            Err(e) => {
+                let _ = app.emit(STREAM_MESSAGE_EVENT_NAME, e.to_string());
+                std::thread::sleep(Duration::from_millis(100));
+                let _ = app.emit(STREAM_MESSAGE_EVENT_NAME, "DONE");
+            }
         }
-        Err(e) => {
-            let _ = app.emit("chat:message://received", e.to_string());
+    } else {
+        match parse_response(res).await {
+            Ok(response) => {
+                let _ = app.emit(MESSAGE_EVENT_NAME, response);
+            }
+            Err(e) => {
+                let _ = app.emit(MESSAGE_EVENT_NAME, e.to_string());
+            }
         }
     }
     Ok(())
@@ -97,5 +140,29 @@ fn parse_text(text: &str) -> Option<String> {
     let json: Value = serde_json::from_str(text).ok()?;
     let choices = json["choices"].as_array()?;
     let content = choices[0]["message"]["content"].as_str()?;
+    Some(String::from(content))
+}
+
+async fn parse_stream_response(response: Result<Response, Error>) -> AR<Vec<String>> {
+    let text = response?.text().await?;
+    let mut contents = Vec::new();
+    for spt in text.split("data:") {
+        let text = spt.trim();
+        if text.is_empty() {
+            continue;
+        }
+        if text == "[DONE]" {
+            break;
+        }
+        let content = parse_stream_text(text).unwrap_or("DONE".to_string());
+        contents.push(content);
+    }
+    Ok(contents)
+}
+
+fn parse_stream_text(text: &str) -> Option<String> {
+    let json: Value = serde_json::from_str(text).ok()?;
+    let choices = json["choices"].as_array()?;
+    let content = choices[0]["delta"]["content"].as_str()?;
     Some(String::from(content))
 }

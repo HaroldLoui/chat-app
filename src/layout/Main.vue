@@ -57,7 +57,7 @@ import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import MessageBox from "../components/MessageBox.vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import { CHAT_BOX_APIS, MESSAGE_APIS } from "../constants";
+import { CHAT_BOX_APIS, MESSAGE_APIS, EVENT_NAME } from "../constants";
 
 const props = defineProps<{
   value: ChatBox;
@@ -94,15 +94,36 @@ onMounted(() => {
   getMessageList();
 });
 const unlisten = ref<Promise<UnlistenFn>>();
+const unlistenStream = ref<Promise<UnlistenFn>>();
 onUnmounted(async () => {
   if (unlisten.value) {
     const f = unlisten.value;
     (await f)();
   }
+  if (unlistenStream.value) {
+    const f = unlistenStream.value;
+    (await f)();
+  }
 });
+const streamContent = ref<string>("");
 const listenReceived = () => {
-  unlisten.value = listen<string>("chat:message://received", async (event) => {
+  unlisten.value = listen<string>(EVENT_NAME.MESSAGE, async (event) => {
     await insertMessage("AI", event.payload, props.value.id);
+  });
+  unlistenStream.value = listen<string>(EVENT_NAME.STREAM_MESSAGE, async (event) => {
+    if (event.payload === "DONE") {
+      await insertMessage("AI", streamContent.value, props.value.id);
+      streamContent.value = "";
+      aiMessage.content = "思考中...";
+    } else {
+      streamContent.value += event.payload;
+      aiMessage.content = streamContent.value;
+      nextTick(() => {
+        if (contentDom.value) {
+          scrollToBottom(contentDom.value);
+        }
+      });
+    }
   });
 };
 
@@ -153,6 +174,7 @@ const onSendMessage = async () => {
 };
 
 const insertMessage = async (sender: "AI" | "ME", content: string, chatId: string) => {
+  console.log("insert: ", sender, content);
   const message = await invoke<Message>(MESSAGE_APIS.ADD_MESSAGE, { chat_id: chatId, content, sender });
   if (sender === "ME") {
     messageList.value.push(message);
