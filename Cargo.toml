@@ -8,6 +8,7 @@ members = [
 tauri = { version = "2", features = ["wry"] }
 tauri-plugin-http = "2"
 tauri-plugin-shell = "2"
+tauri-plugin-store = "2"
 serde = "1"
 serde_json = "1"
 rusqlite = { version = "0.32.0", features = ["bundled", "chrono"] }

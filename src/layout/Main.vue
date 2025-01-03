@@ -57,8 +57,10 @@ import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import MessageBox from "../components/MessageBox.vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { Store } from "@tauri-apps/plugin-store";
 import { CHAT_BOX_APIS, MESSAGE_APIS, EVENT_NAME } from "../constants";
 
+const canSetScrollTop = ref<boolean>(true);
 const props = defineProps<{
   value: ChatBox;
 }>();
@@ -67,6 +69,10 @@ watch(
   () => {
     messageList.value = [];
     getMessageList();
+    canSetScrollTop.value = false;
+    setTimeout(() => {
+      canSetScrollTop.value = true;
+    }, 1000);
   }
 );
 
@@ -90,6 +96,7 @@ onMounted(() => {
   const content = document.getElementById("scrollableContent")!;
   contentDom.value = content;
   listenReceived();
+  listenScroll(content);
   messageList.value = [];
   getMessageList();
 });
@@ -132,10 +139,32 @@ const scrollToBottom = (content: HTMLElement) => {
     content.scrollTop = content.scrollHeight;
   }, 200);
 };
+const listenScroll = async (content: HTMLElement) => {
+  const store = await Store.load("store.json", {
+    autoSave: true,
+  });
+  content.addEventListener("scroll", () => {
+    if (canSetScrollTop.value) {
+      store.set(props.value.id.toString(), content.scrollTop);
+    }
+  });
+};
 
 const messageList = ref<Message[]>([]);
 const getMessageList = async () => {
   messageList.value = await invoke(MESSAGE_APIS.LIST_MESSAGE, { chat_id: props.value.id });
+  const store = await Store.get("store.json");
+  if (store) {
+    const top = await store.get<number>(props.value.id.toString());
+    if (contentDom.value && top !== undefined) {
+      contentDom.value.style.scrollBehavior = "auto";
+      contentDom.value.scrollTop = top;
+      nextTick(() => {
+        contentDom.value!.style.scrollBehavior = "smooth";
+      });
+      return;
+    }
+  }
   nextTick(() => {
     if (contentDom.value) {
       scrollToBottom(contentDom.value);

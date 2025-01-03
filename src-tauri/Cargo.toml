@@ -23,6 +23,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tauri-plugin-http.workspace = true
 tauri-plugin-shell.workspace = true
+tauri-plugin-store.workspace = true
 tauri-plugin-chat-sqlite.workspace = true
 tauri-plugin-chat-openai.workspace = true
 tauri-plugin-chat-request.workspace = true

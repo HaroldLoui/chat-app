@@ -6,6 +6,7 @@
   "permissions": [
     "core:default",
     "shell:allow-open",
+    "store:default",
     "chat-sqlite:default",
     "chat-request:default",
     "chat-openai:default"

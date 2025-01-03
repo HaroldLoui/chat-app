@@ -23,7 +23,7 @@
         :key="i"
         :value="chat"
         :active="activeIndex === i"
-        @click="handleChooseChat(i, chat)"
+        @choose="handleChooseChat(i, chat)"
         @delete="handleDeleteChat"
       ></ChatBox>
     </div>

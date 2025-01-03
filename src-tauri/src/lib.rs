@@ -14,6 +14,8 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_chat_sqlite::init())
         .plugin(tauri_plugin_chat_openai::init())
         .plugin(tauri_plugin_chat_request::init())

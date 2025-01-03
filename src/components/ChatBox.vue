@@ -1,9 +1,11 @@
 <template>
   <div class="chat-box" :class="{ active: props.active }">
-    <div class="title">{{ value.title }}</div>
-    <div class="sub-title">
-      <div class="count">共{{ value.count }}条对话</div>
-      <div class="time">{{ value.createTime }}</div>
+    <div @click="handleChooseChat">
+      <div class="title">{{ value.title }}</div>
+      <div class="sub-title">
+        <div class="count">共{{ value.count }}条对话</div>
+        <div class="time">{{ value.createTime }}</div>
+      </div>
     </div>
     <div class="close-btn" @click="handleDeleteChat">
       <i class="bx bx-x-circle"></i>
@@ -17,9 +19,12 @@ const props = defineProps<{
   active?: Boolean;
 }>();
 
-const emits = defineEmits(["delete"]);
+const emits = defineEmits(["delete", "choose"]);
 const handleDeleteChat = () => {
   emits("delete", props.value.id);
+};
+const handleChooseChat = () => {
+  emits("choose");
 };
 </script>
 
