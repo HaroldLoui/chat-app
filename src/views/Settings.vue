@@ -47,7 +47,17 @@
             禁用代理
           </vs-button>
           <vs-button v-else color="success" type="flat" @click="onEnableProxy(true)"> 启用代理 </vs-button>
+          <vs-button
+            color="success"
+            type="flat"
+            :disabled="!proxyForm.isEnable"
+            :loading="testProxyLoading"
+            @click="onTestProxy"
+          >
+            测试代理
+          </vs-button>
         </div>
+        <my-alert ref="myAlert" :type="setProxySuccess"></my-alert>
       </div>
       <div class="form-box">
         <div class="form-title">接口管理</div>
@@ -85,6 +95,13 @@
           </div>
         </div>
       </div>
+      <div class="form-box">
+        <div class="form-title">其它设置</div>
+        <div class="form-item">
+          <vs-checkbox v-model="enableStream"> 流式传输 </vs-checkbox>
+          <vs-checkbox v-model="associatedContext"> 联系上下文 </vs-checkbox>
+        </div>
+      </div>
     </div>
   </div>
   <my-confirm ref="myConfirm" @confirm="invokeConfig"></my-confirm>
@@ -98,6 +115,7 @@ import { CONFIG_APIS, PROXY_APIS } from "../constants";
 
 import TextButton from "../components/TextButton.vue";
 import MyConfirm from "../components/Confirm.vue";
+import MyAlert from "../components/Alert.vue";
 
 const router = useRouter();
 const goBack = () => {
@@ -132,6 +150,24 @@ const onSaveProxy = async (enable: boolean) => {
 const onEnableProxy = async (enable: boolean) => {
   await invoke(PROXY_APIS.ENABLE_PROXY, { enable });
   queryProxy();
+};
+const testProxyLoading = ref<boolean>(false);
+const setProxySuccess = ref<boolean>(false);
+const myAlert = ref();
+const onTestProxy = () => {
+  const form: Proxy = { ...proxyForm.value };
+  testProxyLoading.value = true;
+  invoke<boolean>(PROXY_APIS.CHECK_PROXY, { entity: form })
+    .then(() => {
+      setProxySuccess.value = true;
+    })
+    .catch(() => {
+      setProxySuccess.value = false;
+    })
+    .finally(() => {
+      testProxyLoading.value = false;
+      myAlert.value.show();
+    });
 };
 
 const apiConfigs = ref<Array<ApiConfig>>();
@@ -185,6 +221,9 @@ const invokeConfig = async () => {
     chooseConfig.value = null;
   }
 };
+
+const enableStream = ref<boolean>(false);
+const associatedContext = ref<boolean>(false);
 </script>
 
 <style lang="scss" scoped>
@@ -201,7 +240,8 @@ const invokeConfig = async () => {
   .main {
     width: 80%;
     margin: 0 auto;
-    height: 100vh;
+    min-height: 100vh;
+    overflow: auto;
     padding: 50px;
     background-color: #fff;
     box-shadow:
@@ -214,7 +254,7 @@ const invokeConfig = async () => {
 
     .form-box {
       width: 90%;
-      min-height: 80px;
+      min-height: 40px;
       border: 1px solid #ccc;
       border-radius: 10px;
       position: relative;

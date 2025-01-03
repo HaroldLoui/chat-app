@@ -1,7 +1,7 @@
-use std::sync::Mutex;
+use std::{sync::Mutex, time::Duration};
 
 use rusqlite::Connection;
-use tauri::State;
+use tauri::{http::StatusCode, State};
 use tauri_plugin_http::reqwest::Client;
 
 use super::proxy::{self as mapper, AppProxy};
@@ -46,5 +46,27 @@ pub fn enable_proxy(
             Ok(())
         },
         Err(e) => Err(e.to_string()),
+    }
+}
+
+const TEST_PROXY_URL: &str = "https://www.google.com";
+#[tauri::command]
+pub async fn check_proxy(entity: AppProxy) -> Result<bool, bool> {
+    let client = AppProxy::create_client(Some(entity));
+    let response_res = client
+        .get(TEST_PROXY_URL)
+        .timeout(Duration::from_secs(1))
+        .send()
+        .await;
+    match response_res {
+        Ok(response) => {
+            match response.status() {
+                StatusCode::OK => Ok(true) ,
+                _ => Err(false),
+            }
+        },
+        Err(_) => {
+            Err(false)
+        },
     }
 }

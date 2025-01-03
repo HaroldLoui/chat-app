@@ -22,4 +22,5 @@ export const PROXY_APIS = {
   QUERY_PROXY: "plugin:chat-request|query_proxy",
   UPDATE_PROXY: "plugin:chat-request|update_proxy",
   ENABLE_PROXY: "plugin:chat-request|enable_proxy",
+  CHECK_PROXY: "plugin:chat-request|check_proxy",
 };

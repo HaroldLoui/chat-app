@@ -44,10 +44,11 @@ pub async fn send_message<R: Runtime>(
     conn: State<'_, Mutex<Connection>>,
     content: String,
 ) -> Result<(), String> {
-    let client = client.lock().unwrap().clone();
-    let config = {
+    let (config, stream) = {
         let conn = conn.lock().unwrap();
-        mapper::query_default_config(&conn).unwrap_or_default()
+        let config = mapper::query_default_config(&conn).unwrap_or_default();
+        let stream = mapper::query_enable_stream(&conn).unwrap_or_default();
+        (config, stream)
     };
     let url = config.url.unwrap_or_default();
     if url.is_empty() {
@@ -59,11 +60,12 @@ pub async fn send_message<R: Runtime>(
         let _ = app.emit("chat:message://received", "请配置密钥。");
         return Ok(());
     }
+    let client = client.lock().unwrap().clone();
     let message = RequestMessage::new_text(MessageRole::User, content);
     let body = CompletionRequestBuilder::default()
         .model("gpt-4o-mini".to_string())
         .messages(vec![message])
-        .stream(false)
+        .stream(stream)
         .build()
         .unwrap();
     let res = client
@@ -83,11 +85,10 @@ pub async fn send_message<R: Runtime>(
     Ok(())
 }
 
-async fn parse_response(result: Result<Response, Error>) -> AR<String> {
-    let response = result?;
-    let text = response.text().await?;
+async fn parse_response(response: Result<Response, Error>) -> AR<String> {
+    let text = response?.text().await?;
     match parse_text(&text) {
-        Some(api_response) => Ok(api_response),
+        Some(content) => Ok(content),
         None => bail!("解析响应内容失败: {}", text)
     }
 }

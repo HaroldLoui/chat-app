@@ -4,7 +4,8 @@ use anyhow::Result;
 use error::SqlError;
 use rusqlite::Connection;
 use tauri::{
-    plugin::{Builder, TauriPlugin}, Manager, Runtime
+    plugin::{Builder, TauriPlugin},
+    Manager, Runtime,
 };
 
 mod error;
@@ -44,13 +45,22 @@ CREATE TABLE message (
 )
 ";
 
-const CONFIG_TABLE_NAME: &'static str = "config";
-const CRATE_CONFIG_TABLE_SQL: &'static str = "
-CREATE TABLE config (
+const API_CONFIG_TABLE_NAME: &'static str = "api_config";
+const CRATE_API_CONFIG_TABLE_SQL: &'static str = "
+CREATE TABLE api_config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     url TEXT NULL,
     key TEXT NULL,
     is_default INTEGER DEFAULT 0
+)
+";
+
+const GLOBAL_CONFIG_TABLE_NAME: &'static str = "global_config";
+const CRATE_GLOBAL_CONFIG_TABLE_SQL: &'static str = "
+CREATE TABLE global_config (
+    id INTEGER PRIMARY KEY,
+    enable_stream INTEGER DEFAULT 0,
+    associated_context INTEGER DEFAULT 0
 )
 ";
 
@@ -68,10 +78,16 @@ CREATE TABLE proxy (
 ";
 
 pub fn init_db(conn: &Connection) -> Result<()> {
-    init_table(conn, CRATE_CHAT_BOX_TABLE_SQL, CHAT_BOX_TABLE_NAME)?;
-    init_table(conn, CRATE_MESSAGE_TABLE_SQL, MESSAGE_TABLE_NAME)?;
-    init_table(conn, CRATE_CONFIG_TABLE_SQL, CONFIG_TABLE_NAME)?;
-    init_table(conn, CRATE_PROXY_TABLE_SQL, PROXY_TABLE_NAME)?;
+    let db_sqls = vec![
+        (CRATE_CHAT_BOX_TABLE_SQL, CHAT_BOX_TABLE_NAME),
+        (CRATE_MESSAGE_TABLE_SQL, MESSAGE_TABLE_NAME),
+        (CRATE_API_CONFIG_TABLE_SQL, API_CONFIG_TABLE_NAME),
+        (CRATE_GLOBAL_CONFIG_TABLE_SQL, GLOBAL_CONFIG_TABLE_NAME),
+        (CRATE_PROXY_TABLE_SQL, PROXY_TABLE_NAME),
+    ];
+    for (create_table_sql, table_name) in db_sqls {
+        init_table(conn, create_table_sql, table_name)?;
+    }
     Ok(())
 }
 
@@ -81,8 +97,14 @@ fn init_table(conn: &Connection, crate_sql: &str, table_name: &str) -> Result<()
         match SqlError::new(e) {
             SqlError::NoSuchTable => {
                 conn.execute(crate_sql, ())?;
-                if PROXY_TABLE_NAME == table_name {
-                    conn.execute("INSERT INTO proxy(id) VALUES (?1);", (0,))?;
+                match table_name {
+                    PROXY_TABLE_NAME => {
+                        conn.execute("INSERT INTO proxy(id) VALUES (?1);", (0,))?;
+                    }
+                    GLOBAL_CONFIG_TABLE_NAME => {
+                        conn.execute("INSERT INTO global_config(id) VALUES (?1);", (0,))?;
+                    }
+                    _ => {}
                 }
             }
             _ => unreachable!(),
@@ -90,4 +112,3 @@ fn init_table(conn: &Connection, crate_sql: &str, table_name: &str) -> Result<()
     }
     Ok(())
 }
-
