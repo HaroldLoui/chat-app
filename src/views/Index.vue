@@ -1,10 +1,10 @@
 <template>
   <div class="app-container">
     <div class="app-siderbar">
-      <Siderbar @change-chat="handleChangeChat"></Siderbar>
+      <Siderbar :value="num" @change-chat="handleChangeChat"></Siderbar>
     </div>
     <div class="app-main">
-      <Main v-if="activeChat" :value="activeChat"></Main>
+      <Main v-if="activeChat" :value="activeChat" @change="onMessageChange"></Main>
     </div>
   </div>
 </template>
@@ -45,6 +45,10 @@ const handleChangeChat = (value: ChatBox) => {
   if (value) {
     activeChat.value = value;
   }
+};
+const num = ref<number>(0);
+const onMessageChange = () => {
+  num.value = (num.value + 1) % 10;
 };
 </script>
 

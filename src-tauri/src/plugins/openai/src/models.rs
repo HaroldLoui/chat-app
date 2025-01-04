@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::fmt::Display;
 
 use derive_builder::Builder;
@@ -8,6 +10,8 @@ use serde_json::{json, Value};
 pub enum MessageRole {
     User,
     System,
+    Assistant,
+    Developer,
 }
 
 impl Serialize for MessageRole {
@@ -18,6 +22,8 @@ impl Serialize for MessageRole {
         match self {
             MessageRole::User => serializer.serialize_str("user"),
             MessageRole::System => serializer.serialize_str("system"),
+            MessageRole::Assistant => serializer.serialize_str("assistant"),
+            MessageRole::Developer => serializer.serialize_str("developer"),
         }
     }
 }
@@ -31,8 +37,10 @@ impl<'de> Deserialize<'de> for MessageRole {
         match s.to_lowercase().as_str() {
             "user" => Ok(MessageRole::User),
             "system" => Ok(MessageRole::System),
+            "assistant" => Ok(MessageRole::Assistant),
+            "developer" => Ok(MessageRole::Developer),
             _ => {
-                let msg = format!("Role can only be 'user' or 'system', current is {}", s);
+                let msg = format!("Role can only be 'user', 'system' or 'assistant', current is {}", s);
                 Err(serde::de::Error::custom(msg))
             }
         }
@@ -46,7 +54,6 @@ pub enum Content {
     Audio { data: String, format: AudioFormat },
 }
 
-#[allow(dead_code)]
 impl Content {
     pub fn text(text: &str) -> Result<Self, String> {
         Ok(Content::Text {
@@ -184,11 +191,10 @@ impl<'de> Deserialize<'de> for AudioFormat {
 #[derive(Clone, Debug)]
 pub enum MessageContent {
     Text(String),
-    // image or audio
+    /// image or audio
     NotText(Vec<Content>),
 }
 
-#[allow(dead_code)]
 impl MessageContent {
     pub fn text(text: String) -> Self {
         Self::Text(text)
@@ -267,3 +273,18 @@ pub struct CompletionRequest {
     stream: bool,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_request_message() {
+        let msg = RequestMessage::new_text(MessageRole::User, "你好".to_string());
+        println!("{}", serde_json::to_string(&msg).unwrap());
+
+        let v = json!({"role":"assistant","content":"你好,can i help you"});
+        println!("{}", v);
+        let msg: RequestMessage = serde_json::from_value(v).expect("msg");
+        println!("{:?}", msg);
+    }
+}

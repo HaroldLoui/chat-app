@@ -49,13 +49,26 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { invoke } from "@tauri-apps/api/core";
 import { CHAT_BOX_APIS } from "../constants";
 
 import ChatBox from "../components/ChatBox.vue";
 import MyConfirm from "../components/Confirm.vue";
+
+const props = defineProps({
+  value: {
+    type: Number,
+    required: true,
+  },
+});
+watch(
+  () => props.value,
+  () => {
+    handleSearch();
+  }
+);
 
 onMounted(async () => {
   await handleSearch();

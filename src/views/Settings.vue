@@ -236,7 +236,7 @@ const queryContext = async () => {
   associatedContext.value = await invoke(GLOBAL_CONFIG_APIS.QUERY_CONTEXT);
 };
 const onContextChange = async () => {
-  await invoke(GLOBAL_CONFIG_APIS.UPDATE_CONTEXT, { stream: associatedContext.value });
+  await invoke(GLOBAL_CONFIG_APIS.UPDATE_CONTEXT, { context: associatedContext.value });
 };
 </script>
 

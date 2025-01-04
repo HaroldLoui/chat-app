@@ -5,6 +5,7 @@ use tauri::{
 mod commands;
 mod mapper;
 mod models;
+mod response;
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("chat-openai")

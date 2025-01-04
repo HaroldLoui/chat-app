@@ -1,15 +1,13 @@
 use std::sync::Mutex;
 use std::time::Duration;
 
-use anyhow::{bail, Result as AR};
 use rusqlite::Connection;
-use serde_json::Value;
 use tauri::{AppHandle, Emitter, Runtime, State};
-use tauri_plugin_http::reqwest::{Client, Error, Response};
+use tauri_plugin_http::reqwest::Client;
 
+use crate::response::{ContextMessage, OpenAiClient, Params, ResponseContent};
 use crate::mapper;
 use crate::mapper::ApiConfig;
-use crate::models::*;
 
 #[tauri::command]
 pub fn list_api_config(conn: State<'_, Mutex<Connection>>) -> Result<Vec<ApiConfig>, String> {
@@ -45,7 +43,10 @@ pub fn query_enable_stream(conn: State<'_, Mutex<Connection>>) -> Result<bool, S
 }
 
 #[tauri::command]
-pub fn update_enable_stream(conn: State<'_, Mutex<Connection>>, stream: bool) -> Result<(), String> {
+pub fn update_enable_stream(
+    conn: State<'_, Mutex<Connection>>,
+    stream: bool,
+) -> Result<(), String> {
     let conn = conn.lock().unwrap();
     mapper::update_enable_stream(&conn, stream).map_err(|e| e.to_string())
 }
@@ -57,7 +58,10 @@ pub fn query_associated_context(conn: State<'_, Mutex<Connection>>) -> Result<bo
 }
 
 #[tauri::command]
-pub fn update_associated_context(conn: State<'_, Mutex<Connection>>, context: bool) -> Result<(), String> {
+pub fn update_associated_context(
+    conn: State<'_, Mutex<Connection>>,
+    context: bool,
+) -> Result<(), String> {
     let conn = conn.lock().unwrap();
     mapper::update_associated_context(&conn, context).map_err(|e| e.to_string())
 }
@@ -70,6 +74,7 @@ pub async fn send_message<R: Runtime>(
     client: State<'_, Mutex<Client>>,
     conn: State<'_, Mutex<Connection>>,
     content: String,
+    context: Option<ContextMessage>,
 ) -> Result<(), String> {
     let (config, stream) = {
         let conn = conn.lock().unwrap();
@@ -88,81 +93,19 @@ pub async fn send_message<R: Runtime>(
         return Ok(());
     }
     let client = client.lock().unwrap().clone();
-    let message = RequestMessage::new_text(MessageRole::User, content);
-    let body = CompletionRequestBuilder::default()
-        .model("gpt-4o-mini".to_string())
-        .messages(vec![message])
-        .stream(stream)
-        .build()
-        .unwrap();
-    let res = client
-        .post(url)
-        .header("Authorization", format!("Bearer {}", key))
-        .json(&body)
-        .send()
-        .await;
-    if stream {
-        match parse_stream_response(res).await {
-            Ok(contents) => {
-                for content in contents {
-                    let _ = app.emit(STREAM_MESSAGE_EVENT_NAME, content);
-                    std::thread::sleep(Duration::from_millis(100));
-                }
-            },
-            Err(e) => {
-                let _ = app.emit(STREAM_MESSAGE_EVENT_NAME, e.to_string());
-                std::thread::sleep(Duration::from_millis(100));
-                let _ = app.emit(STREAM_MESSAGE_EVENT_NAME, "DONE");
-            }
+    let http_client = OpenAiClient::new(&client);
+    let params = Params::from(url, key, stream);
+    match http_client.send(params, content, context).await {
+        ResponseContent::Text(content) => {
+            let _ = app.emit(MESSAGE_EVENT_NAME, content);
         }
-    } else {
-        match parse_response(res).await {
-            Ok(response) => {
-                let _ = app.emit(MESSAGE_EVENT_NAME, response);
-            }
-            Err(e) => {
-                let _ = app.emit(MESSAGE_EVENT_NAME, e.to_string());
+        ResponseContent::Array(contents) => {
+            for content in contents {
+                let _ = app.emit(STREAM_MESSAGE_EVENT_NAME, content);
+                std::thread::sleep(Duration::from_millis(100));
             }
         }
     }
     Ok(())
 }
 
-async fn parse_response(response: Result<Response, Error>) -> AR<String> {
-    let text = response?.text().await?;
-    match parse_text(&text) {
-        Some(content) => Ok(content),
-        None => bail!("解析响应内容失败: {}", text)
-    }
-}
-
-fn parse_text(text: &str) -> Option<String> {
-    let json: Value = serde_json::from_str(text).ok()?;
-    let choices = json["choices"].as_array()?;
-    let content = choices[0]["message"]["content"].as_str()?;
-    Some(String::from(content))
-}
-
-async fn parse_stream_response(response: Result<Response, Error>) -> AR<Vec<String>> {
-    let text = response?.text().await?;
-    let mut contents = Vec::new();
-    for spt in text.split("data:") {
-        let text = spt.trim();
-        if text.is_empty() {
-            continue;
-        }
-        if text == "[DONE]" {
-            break;
-        }
-        let content = parse_stream_text(text).unwrap_or("DONE".to_string());
-        contents.push(content);
-    }
-    Ok(contents)
-}
-
-fn parse_stream_text(text: &str) -> Option<String> {
-    let json: Value = serde_json::from_str(text).ok()?;
-    let choices = json["choices"].as_array()?;
-    let content = choices[0]["delta"]["content"].as_str()?;
-    Some(String::from(content))
-}

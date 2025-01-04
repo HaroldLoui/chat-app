@@ -58,7 +58,7 @@ import MessageBox from "../components/MessageBox.vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { Store } from "@tauri-apps/plugin-store";
-import { CHAT_BOX_APIS, MESSAGE_APIS, EVENT_NAME } from "../constants";
+import { CHAT_BOX_APIS, MESSAGE_APIS, EVENT_NAME, GLOBAL_CONFIG_APIS } from "../constants";
 
 const canSetScrollTop = ref<boolean>(true);
 const props = defineProps<{
@@ -197,13 +197,28 @@ const onSendMessage = async () => {
   await insertMessage(sender, content, chatId);
   senderInfo.value = "";
   loading.value = true;
-  messageList.value.push(aiMessage);
-  await invoke(MESSAGE_APIS.SEND_MESSAGE, { content, chat_id: chatId });
+  const enableContext = await invoke<boolean>(GLOBAL_CONFIG_APIS.QUERY_CONTEXT);
+  if (enableContext) {
+    const contexts = messageList.value.map((m) => {
+      return {
+        role: m.sender === "AI" ? "assistant" : "user",
+        content: m.content,
+      };
+    });
+    messageList.value.push(aiMessage);
+    const context = { mask: "你是一个有用的助手", contexts };
+    await invoke(MESSAGE_APIS.SEND_MESSAGE, { content, chat_id: chatId, context });
+  } else {
+    messageList.value.push(aiMessage);
+    await invoke(MESSAGE_APIS.SEND_MESSAGE, { content, chat_id: chatId });
+  }
   loading.value = false;
 };
 
+const emits = defineEmits(["change"]);
 const insertMessage = async (sender: "AI" | "ME", content: string, chatId: string) => {
   const message = await invoke<Message>(MESSAGE_APIS.ADD_MESSAGE, { chat_id: chatId, content, sender });
+  emits("change");
   if (sender === "ME") {
     messageList.value.push(message);
   } else {

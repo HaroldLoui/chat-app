@@ -40,11 +40,6 @@ pub fn update_chat_box_title(conn: &Connection, id: i64, title: String) -> Resul
     Ok(())
 }
 
-fn increament_chat_box_count(conn: &Connection, id: i64) -> Result<()> {
-    conn.execute("UPDATE chat_box SET count = count + 1 WHERE id = ?1", (id,))?;
-    Ok(())
-}
-
 pub fn delete_chat_box(conn: &Connection, id: i64) -> Result<()> {
     conn.execute("DELETE FROM message WHERE chat_id = ?1", (id,))?;
     conn.execute("DELETE FROM chat_box WHERE id = ?1", (id,))?;
@@ -62,9 +57,7 @@ pub fn insert_message(conn: &Connection, message: Message) -> Result<()> {
             &message.create_time,
         ),
     )?;
-    if message.sender == Sender::AI {
-        increament_chat_box_count(conn, message.chat_id)?;
-    }
+    conn.execute("UPDATE chat_box SET count = count + 1 WHERE id = ?1", (&message.chat_id,))?;
     Ok(())
 }
 
