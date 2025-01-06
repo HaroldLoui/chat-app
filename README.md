@@ -1,16 +1,22 @@
-# Tauri + Vue + TypeScript
+# ChatGpt聊天应用
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+一款UI仿照[ChatGPT-Next-Web](https://github.com/ChatGPTNextWeb/ChatGPT-Next-Web)项目，使用`Rust` + [`Tauri`](https://github.com/tauri-apps/tauri)框架搭建的简单AI聊天项目
 
-## Recommended IDE Setup
+**聊天界面：**
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+![聊天界面.png](./screenshots/app.png)
 
-## Type Support For `.vue` Imports in TS
+**设置界面：**
 
-Since TypeScript cannot handle type information for `.vue` imports, they are shimmed to be a generic Vue component type by default. In most cases this is fine if you don't really care about component prop types outside of templates. However, if you wish to get actual prop types in `.vue` imports (for example to get props validation when using manual `h(...)` calls), you can enable Volar's Take Over mode by following these steps:
+![设置界面.png](./screenshots/settings.png)
 
-1. Run `Extensions: Show Built-in Extensions` from VS Code's command palette, look for `TypeScript and JavaScript Language Features`, then right click and select `Disable (Workspace)`. By default, Take Over mode will enable itself if the default TypeScript extension is disabled.
-2. Reload the VS Code window by running `Developer: Reload Window` from the command palette.
+### 相关功能：
 
-You can learn more about Take Over mode [here](https://github.com/johnsoncodehk/volar/discussions/471).
+- [x] 自定义Api接口和密钥
+- [x] 设置代理功能
+- [x] 流式响应
+- [x] 联系上下文
+- [ ] 发送图片
+- [ ] 自定义模型
+
+> **NOTE：** 自定义API功能需要保证接口返回的数据结构和官方API返回的一致
