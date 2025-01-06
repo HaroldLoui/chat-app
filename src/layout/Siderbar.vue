@@ -24,7 +24,7 @@
         :value="chat"
         :active="activeIndex === i"
         @choose="handleChooseChat(i, chat)"
-        @delete="handleDeleteChat"
+        @delete="handleDeleteChat(i, $event)"
       ></ChatBox>
     </div>
   </div>
@@ -103,13 +103,26 @@ const handleChooseChat = (i: number, chat: ChatBox) => {
 
 const myConfirm = ref();
 const deleteChatId = ref<string>("");
-const handleDeleteChat = (id: string | number) => {
+const deleteChatIndex = ref<number | null>(null);
+const handleDeleteChat = (index: number, id: string | number) => {
+  deleteChatIndex.value = index;
   deleteChatId.value = id.toString();
   myConfirm.value.show("删除后不可恢复！确认删除该对话？");
 };
 const invokeDeleteChat = async () => {
   await invoke(CHAT_BOX_APIS.DEL, { id: deleteChatId.value });
-  getChatList();
+  await getChatList();
+  if (chatList.value.length > 0) {
+    if (activeIndex.value > deleteChatIndex.value!) {
+      activeIndex.value -= 1;
+    } else if (activeIndex.value === deleteChatIndex.value) {
+      activeIndex.value =
+        chatList.value.length > activeIndex.value ? activeIndex.value : Math.max(0, activeIndex.value - 1);
+    }
+  }
+  const emitChat = chatList.value.length === 0 ? null : chatList.value[activeIndex.value];
+  emits("changeChat", emitChat);
+  deleteChatIndex.value = null;
   myConfirm.value.close();
 };
 

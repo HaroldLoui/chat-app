@@ -265,10 +265,19 @@ impl RequestMessage {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RequestModel(String);
+
+impl Default for RequestModel {
+    fn default() -> Self {
+        Self("gpt-4o-mini".to_string())
+    }
+}
+
 #[derive(Debug, Default, Builder, Serialize, Deserialize)]
 #[builder(setter(into))]
 pub struct CompletionRequest {
-    model: String,
+    model: RequestModel,
     messages: Vec<RequestMessage>,
     stream: bool,
 }
@@ -286,5 +295,19 @@ mod tests {
         println!("{}", v);
         let msg: RequestMessage = serde_json::from_value(v).expect("msg");
         println!("{:?}", msg);
+    }
+
+    #[test]
+    fn test_request_model() {
+        let model = RequestModel::default();
+        println!("{}", serde_json::to_string(&model).unwrap());
+
+        let body = CompletionRequestBuilder::default()
+            .model(RequestModel::default())
+            .messages(vec![])
+            .stream(false)
+            .build()
+            .unwrap();
+        println!("{}", serde_json::to_string(&body).unwrap());
     }
 }

@@ -5,6 +5,7 @@
     </div>
     <div class="app-main">
       <Main v-if="activeChat" :value="activeChat" @change="onMessageChange"></Main>
+      <div v-else class="main-placeholder">请先添加聊天</div>
     </div>
   </div>
 </template>
@@ -42,9 +43,7 @@ const isUrl = (url: string | null) => {
 
 const activeChat = ref<ChatBox | null>(null);
 const handleChangeChat = (value: ChatBox) => {
-  if (value) {
-    activeChat.value = value;
-  }
+  activeChat.value = value;
 };
 const num = ref<number>(0);
 const onMessageChange = () => {
@@ -71,6 +70,15 @@ const onMessageChange = () => {
   .app-main {
     width: 100%;
     height: 100%;
+
+    .main-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b8b6b6;
+    }
   }
 }
 </style>

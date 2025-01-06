@@ -24,6 +24,16 @@ pub enum ResponseContent {
     Array(Vec<String>),
 }
 
+impl ResponseContent {
+    pub fn from_error(stream: bool, error_desc: String) -> Self {
+        if stream {
+            ResponseContent::Array(vec![error_desc, "DONE".to_string()])
+        } else {
+            ResponseContent::Text(error_desc)
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ContextMessage {
     /// 面具
@@ -71,7 +81,7 @@ impl<'h> OpenAiClient<'h> {
         let message = RequestMessage::new_text(MessageRole::User, content);
         messages.push(message);
         let body = CompletionRequestBuilder::default()
-            .model("gpt-4o-mini".to_string())
+            .model(RequestModel::default())
             .messages(messages)
             .stream(p.stream)
             .build()
@@ -86,11 +96,7 @@ impl<'h> OpenAiClient<'h> {
         parse_response(response_result, p.stream)
             .await
             .unwrap_or_else(|e| {
-                if p.stream {
-                    ResponseContent::Array(vec![e.to_string(), "DONE".to_string()])
-                } else {
-                    ResponseContent::Text(e.to_string())
-                }
+                ResponseContent::from_error(p.stream, e.to_string())
             })
     }
 }
