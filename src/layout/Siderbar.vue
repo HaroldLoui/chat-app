@@ -34,7 +34,7 @@
         <i class="bx bx-cog"></i>
         <template #animate> 设置 </template>
       </vs-button>
-      <vs-button type="flat">
+      <vs-button type="flat" @click="onGithub">
         <i class="bx bxl-github"></i>
         <template #animate> 源码 </template>
       </vs-button>
@@ -52,6 +52,7 @@
 import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-shell";
 import { CHAT_BOX_APIS } from "../constants";
 
 import ChatBox from "../components/ChatBox.vue";
@@ -129,6 +130,9 @@ const invokeDeleteChat = async () => {
 const router = useRouter();
 const onSetting = () => {
   router.push("/setting");
+};
+const onGithub = () => {
+  open("https://github.com/HaroldLoui/chat-app");
 };
 </script>
 
