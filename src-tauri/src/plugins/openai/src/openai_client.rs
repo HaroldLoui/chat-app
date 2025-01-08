@@ -1,4 +1,4 @@
-use crate::models::*;
+use crate::request_models::*;
 use serde::{Deserialize, Serialize};
 
 use anyhow::{bail, Result as AR};
@@ -10,11 +10,12 @@ pub struct SendParams {
     url: String,
     key: String,
     stream: bool,
+    model: RequestModel,
 }
 
 impl SendParams {
-    pub fn from(url: String, key: String, stream: bool) -> Self {
-        Self { url, key, stream }
+    pub fn from(url: String, key: String, stream: bool, model: Option<RequestModel>) -> Self {
+        Self { url, key, stream, model: model.unwrap_or_default() }
     }
 }
 
@@ -81,7 +82,7 @@ impl<'h> OpenAiClient<'h> {
         }
         messages.push(RequestMessage::new_text(MessageRole::User, &content));
         let body = CompletionRequestBuilder::default()
-            .model(RequestModel::default())
+            .model(sp.model)
             .messages(messages)
             .stream(sp.stream)
             .build()

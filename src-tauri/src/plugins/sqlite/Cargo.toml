@@ -6,7 +6,6 @@ links = "tauri-plugin-chat-sqlite"
 
 [dependencies]
 tauri.workspace = true
-anyhow.workspace = true 
 rusqlite.workspace = true
 
 [build-dependencies]

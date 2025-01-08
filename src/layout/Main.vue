@@ -25,14 +25,26 @@
     <div class="chat-sender">
       <div class="sender-toolbar">
         <vs-button icon color="#909399" type="border">
-          <i class="bx bx-smile"></i>
-        </vs-button>
-        <vs-button icon color="#909399" type="border">
           <i class="bx bxs-image"></i>
         </vs-button>
-        <vs-button icon color="#909399" type="border">
-          <i class="bx bxs-invader"></i>
-        </vs-button>
+        <vs-tooltip v-model="activeTooltip" placement="top" type="shadow" trigger="click">
+          <vs-button icon color="#909399" type="border" @click="activeTooltip = !activeTooltip">
+            <i class="bx bxs-invader"></i>
+          </vs-button>
+          <template #content>
+            <div>双击选中</div>
+            <vs-scrollbar height="400px">
+              <div v-for="(model, index) in modelNames" :key="index" class="model" @dblclick="handleChooseModel(model)">
+                {{ model }}
+                <i
+                  v-if="model === currentModel"
+                  class="bx bxs-check-square"
+                  :class="{ choosed: model === currentModel }"
+                ></i>
+              </div>
+            </vs-scrollbar>
+          </template>
+        </vs-tooltip>
       </div>
       <div class="sender-box">
         <textarea
@@ -59,6 +71,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { Store } from "@tauri-apps/plugin-store";
 import { CHAT_BOX_APIS, MESSAGE_APIS, EVENT_NAME, GLOBAL_CONFIG_APIS } from "../constants";
+import { modelNames } from "../constants/models";
 
 const canSetScrollTop = ref<boolean>(true);
 const props = defineProps<{
@@ -197,6 +210,7 @@ const onSendMessage = async () => {
   await insertMessage(sender, content, chatId);
   senderInfo.value = "";
   loading.value = true;
+  // 是否启用了上下文
   const enableContext = await invoke<boolean>(GLOBAL_CONFIG_APIS.QUERY_CONTEXT);
   if (enableContext) {
     const contexts = messageList.value.map((m) => {
@@ -207,10 +221,10 @@ const onSendMessage = async () => {
     });
     messageList.value.push(aiMessage);
     const context = { mask: "你是一个有用的助手", contexts };
-    await invoke(MESSAGE_APIS.SEND_MESSAGE, { content, chat_id: chatId, context });
+    await invoke(MESSAGE_APIS.SEND_MESSAGE, { content, chat_id: chatId, context, model: currentModel.value });
   } else {
     messageList.value.push(aiMessage);
-    await invoke(MESSAGE_APIS.SEND_MESSAGE, { content, chat_id: chatId });
+    await invoke(MESSAGE_APIS.SEND_MESSAGE, { content, chat_id: chatId, model: currentModel.value });
   }
   loading.value = false;
 };
@@ -227,6 +241,12 @@ const insertMessage = async (sender: "AI" | "ME", content: string, chatId: strin
   if (contentDom.value) {
     scrollToBottom(contentDom.value);
   }
+};
+
+const activeTooltip = ref<boolean>(false);
+const currentModel = ref<string>("gpt-4o-mini");
+const handleChooseModel = (model: string) => {
+  currentModel.value = model;
 };
 </script>
 
@@ -330,6 +350,24 @@ const insertMessage = async (sender: "AI" | "ME", content: string, chatId: strin
         height: 40px;
       }
     }
+  }
+}
+</style>
+
+<style lang="scss">
+.model {
+  color: #686868;
+  height: 30px;
+  line-height: 30px;
+  padding-left: 5px;
+  cursor: pointer;
+  text-align: left;
+  user-select: none;
+  &:hover {
+    background-color: #ccc;
+  }
+  .choosed {
+    color: rgba(var(--vs-success));
   }
 }
 </style>

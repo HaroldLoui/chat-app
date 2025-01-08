@@ -4,8 +4,8 @@ use tauri::{
 
 mod commands;
 mod mapper;
-mod models;
-mod response;
+mod request_models;
+mod openai_client;
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("chat-openai")

@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `api_config`(
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     url        TEXT,
     key        TEXT,
-    is_default INTEGER default 0
+    is_default INTEGER DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS `global_config`(
     id                 INTEGER PRIMARY KEY,

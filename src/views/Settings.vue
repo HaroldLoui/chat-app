@@ -95,6 +95,14 @@
           </div>
         </div>
       </div>
+      <!-- <div class="form-box">
+        <div class="form-title">模型设置</div>
+        <div class="form-item" style="flex-wrap: wrap">
+          <vs-checkbox v-for="(model, index) in models" :key="index" v-model="model.enable">
+            {{ model.name }}
+          </vs-checkbox>
+        </div>
+      </div> -->
       <div class="form-box">
         <div class="form-title">其它设置</div>
         <div class="form-item">
@@ -129,6 +137,7 @@ onMounted(() => {
   queryContext();
 });
 
+// -------------------------- 代理配置 --------------------------
 const proxyForm = ref<Proxy>({
   id: 0,
   host: "http://127.0.0.1",
@@ -171,7 +180,9 @@ const onTestProxy = () => {
       myAlert.value.show();
     });
 };
+// -------------------------- 代理配置 --------------------------
 
+// -------------------------- 接口配置 --------------------------
 const apiConfigs = ref<Array<ApiConfig>>();
 const queryConfigs = async () => {
   const list: Array<ApiConfig> = await invoke(API_CONFIG_APIS.LIST);
@@ -201,7 +212,6 @@ const handleSaveConfig = async (setDefault: boolean) => {
   showConfigForm.value = false;
   queryConfigs();
 };
-
 const myConfirm = ref();
 const chooseConfig = ref<number | null>();
 const handleType = ref<boolean>(true);
@@ -223,7 +233,13 @@ const invokeConfig = async () => {
     chooseConfig.value = null;
   }
 };
+// -------------------------- 接口配置 --------------------------
 
+// -------------------------- 模型配置 --------------------------
+
+// -------------------------- 模型配置 --------------------------
+
+// -------------------------- 其他设置 --------------------------
 const enableStream = ref<boolean>(false);
 const queryStream = async () => {
   enableStream.value = await invoke(GLOBAL_CONFIG_APIS.QUERY_STREAM);
@@ -238,6 +254,7 @@ const queryContext = async () => {
 const onContextChange = async () => {
   await invoke(GLOBAL_CONFIG_APIS.UPDATE_CONTEXT, { context: associatedContext.value });
 };
+// -------------------------- 其他设置 --------------------------
 </script>
 
 <style lang="scss" scoped>

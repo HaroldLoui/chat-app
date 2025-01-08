@@ -5,9 +5,10 @@ use rusqlite::Connection;
 use tauri::{AppHandle, Emitter, Runtime, State};
 use tauri_plugin_http::reqwest::Client;
 
-use crate::response::{ContextMessage, OpenAiClient, SendParams, ResponseContent};
+use crate::openai_client::{ContextMessage, OpenAiClient, SendParams, ResponseContent};
 use crate::mapper;
 use crate::mapper::ApiConfig;
+use crate::request_models::RequestModel;
 
 #[tauri::command]
 pub fn list_api_config(conn: State<'_, Mutex<Connection>>) -> Result<Vec<ApiConfig>, String> {
@@ -75,6 +76,7 @@ pub async fn send_message<R: Runtime>(
     conn: State<'_, Mutex<Connection>>,
     content: String,
     context: Option<ContextMessage>,
+    model: Option<RequestModel>,
 ) -> Result<(), String> {
     let (config, stream) = {
         let conn = conn.lock().unwrap();
@@ -94,7 +96,7 @@ pub async fn send_message<R: Runtime>(
     }
     let client = client.lock().unwrap().clone();
     let http_client = OpenAiClient::new(&client);
-    let params = SendParams::from(url, key, stream);
+    let params = SendParams::from(url, key, stream, model);
     match http_client.send(params, content, context).await {
         ResponseContent::Text(content) => {
             let _ = app.emit(MESSAGE_EVENT_NAME, content);
