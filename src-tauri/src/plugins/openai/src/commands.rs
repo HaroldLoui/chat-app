@@ -5,7 +5,7 @@ use rusqlite::Connection;
 use tauri::{AppHandle, Emitter, Runtime, State};
 use tauri_plugin_http::reqwest::Client;
 
-use crate::response::{ContextMessage, OpenAiClient, Params, ResponseContent};
+use crate::response::{ContextMessage, OpenAiClient, SendParams, ResponseContent};
 use crate::mapper;
 use crate::mapper::ApiConfig;
 
@@ -94,7 +94,7 @@ pub async fn send_message<R: Runtime>(
     }
     let client = client.lock().unwrap().clone();
     let http_client = OpenAiClient::new(&client);
-    let params = Params::from(url, key, stream);
+    let params = SendParams::from(url, key, stream);
     match http_client.send(params, content, context).await {
         ResponseContent::Text(content) => {
             let _ = app.emit(MESSAGE_EVENT_NAME, content);

@@ -260,8 +260,8 @@ pub struct RequestMessage {
 }
 
 impl RequestMessage {
-    pub fn new_text(role: MessageRole, text: String) -> Self {
-        RequestMessage { role, content: MessageContent::text(text) }
+    pub fn new_text(role: MessageRole, text: &str) -> Self {
+        RequestMessage { role, content: MessageContent::text(String::from(text)) }
     }
 }
 
@@ -288,7 +288,7 @@ mod tests {
 
     #[test]
     fn test_request_message() {
-        let msg = RequestMessage::new_text(MessageRole::User, "你好".to_string());
+        let msg = RequestMessage::new_text(MessageRole::User, "你好");
         println!("{}", serde_json::to_string(&msg).unwrap());
 
         let v = json!({"role":"assistant","content":"你好,can i help you"});

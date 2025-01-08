@@ -6,13 +6,13 @@ use serde_json::Value;
 use tauri_plugin_http::reqwest::{Client, Error, Response};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct Params {
+pub struct SendParams {
     url: String,
     key: String,
     stream: bool,
 }
 
-impl Params {
+impl SendParams {
     pub fn from(url: String, key: String, stream: bool) -> Self {
         Self { url, key, stream }
     }
@@ -37,14 +37,15 @@ impl ResponseContent {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ContextMessage {
     /// 面具
-    mask: String,
+    mask: Option<String>,
+    /// 上下文消息
     contexts: Vec<RequestMessage>,
 }
 
 impl Default for ContextMessage {
     fn default() -> Self {
         Self {
-            mask: "你是一个有用的助手".to_string(),
+            mask: Some("你是一个有用的助手".to_string()),
             contexts: Vec::new(),
         }
     }
@@ -52,11 +53,11 @@ impl Default for ContextMessage {
 
 impl ContextMessage {
     pub fn context_messages(&self) -> Vec<RequestMessage> {
-        if self.contexts.is_empty() {
+        if self.mask.is_none() && self.contexts.is_empty() {
             let cm = ContextMessage::default();
-            return vec![RequestMessage::new_text(MessageRole::System, cm.mask)];
+            return vec![RequestMessage::new_text(MessageRole::System, &cm.mask.unwrap())];
         }
-        let mask_msg = RequestMessage::new_text(MessageRole::System, self.mask.clone());
+        let mask_msg = RequestMessage::new_text(MessageRole::System, self.mask.as_ref().unwrap());
         let mut contexts = vec![mask_msg];
         contexts.extend_from_slice(self.contexts.as_ref());
         contexts
@@ -73,30 +74,29 @@ impl<'h> OpenAiClient<'h> {
         Self { client }
     }
 
-    pub async fn send(&self, p: Params, content: String, context: Option<ContextMessage>) -> ResponseContent {
+    pub async fn send(&self, sp: SendParams, content: String, context: Option<ContextMessage>) -> ResponseContent {
         let mut messages = Vec::new();
         if context.is_some() {
             messages.extend_from_slice(context.unwrap().context_messages().as_ref());
         }
-        let message = RequestMessage::new_text(MessageRole::User, content);
-        messages.push(message);
+        messages.push(RequestMessage::new_text(MessageRole::User, &content));
         let body = CompletionRequestBuilder::default()
             .model(RequestModel::default())
             .messages(messages)
-            .stream(p.stream)
+            .stream(sp.stream)
             .build()
             .unwrap();
         let response_result = self
             .client
-            .post(p.url)
-            .header("Authorization", format!("Bearer {}", p.key))
+            .post(sp.url)
+            .header("Authorization", format!("Bearer {}", sp.key))
             .json(&body)
             .send()
             .await;
-        parse_response(response_result, p.stream)
+        parse_response(response_result, sp.stream)
             .await
             .unwrap_or_else(|e| {
-                ResponseContent::from_error(p.stream, e.to_string())
+                ResponseContent::from_error(sp.stream, e.to_string())
             })
     }
 }
