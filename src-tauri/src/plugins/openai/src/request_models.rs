@@ -5,6 +5,7 @@ use std::fmt::Display;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use super::utils::opstr_to_string;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum MessageRole {
@@ -40,8 +41,7 @@ impl<'de> Deserialize<'de> for MessageRole {
             "assistant" => Ok(MessageRole::Assistant),
             "developer" => Ok(MessageRole::Developer),
             _ => {
-                let msg = format!("Role can only be 'user', 'system' or 'assistant', current is {}", s);
-                Err(serde::de::Error::custom(msg))
+                Err(serde::de::Error::custom("角色错误"))
             }
         }
     }
@@ -96,24 +96,18 @@ impl Content {
         if let Value::String(ct) = type_ {
             match ct.to_lowercase().as_str() {
                 "text" => {
-                    let text = value["text"]
-                        .as_str()
-                        .map_or("".to_string(), |t| String::from(t));
+                    let text = opstr_to_string(value["text"].as_str());
                     Ok(Content::Text { text })
                 }
                 "image_url" => {
-                    let image_url = value["image_url"]["url"]
-                        .as_str()
-                        .map_or("".to_string(), |t| String::from(t));
+                    let image_url = opstr_to_string(value["image_url"]["url"].as_str());
                     Ok(Content::Image { image_url })
                 }
                 "input_audio" => {
                     let format = value["input_audio"]["format"].as_str().unwrap_or_default();
-                    AudioFormat::from_str(format).map(|format| {
-                        let data = value["input_audio"]["data"]
-                            .as_str()
-                            .map_or("".to_string(), |t| String::from(t));
-                        Content::Audio { data, format }
+                    AudioFormat::from_str(format).map(|audio_format| {
+                        let data = opstr_to_string(value["input_audio"]["data"].as_str());
+                        Content::Audio { data, format: audio_format }
                     })
                 }
                 _ => Err(format!("类型错误: {}", ct)),
@@ -213,7 +207,7 @@ impl Serialize for MessageContent {
         S: serde::Serializer,
     {
         match self {
-            Self::Text(text) => serializer.serialize_str(&text),
+            Self::Text(text) => serializer.serialize_str(text),
             Self::NotText(contents) => Vec::serialize(contents, serializer),
         }
     }
@@ -237,7 +231,7 @@ impl<'de> Deserialize<'de> for MessageContent {
                 }
                 Ok(MessageContent::NotText(contents))
             },
-            _ => Err(serde::de::Error::custom("消息类型错误".to_string())),
+            _ => Err(serde::de::Error::custom("消息类型错误")),
         }
     }
 }

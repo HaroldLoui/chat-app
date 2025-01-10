@@ -5,64 +5,57 @@ use rusqlite::Connection;
 use tauri::{AppHandle, Emitter, Runtime, State};
 use tauri_plugin_http::reqwest::Client;
 
-use crate::openai_client::{ContextMessage, OpenAiClient, SendParams, ResponseContent};
 use crate::mapper;
 use crate::mapper::ApiConfig;
+use crate::openai_client::{ContextMessage, OpenAiClient, ResponseContent, SendParams};
 use crate::request_models::RequestModel;
 
+type CmdResult<T = ()> = Result<T, String>;
+
 #[tauri::command]
-pub fn list_api_config(conn: State<'_, Mutex<Connection>>) -> Result<Vec<ApiConfig>, String> {
+pub fn list_api_config(conn: State<'_, Mutex<Connection>>) -> CmdResult<Vec<ApiConfig>> {
     let conn = conn.lock().unwrap();
     mapper::query_config_list(&conn).map_err(|e| e.to_string())
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn insert_api_config(
-    conn: State<'_, Mutex<Connection>>,
-    eneity: ApiConfig,
-) -> Result<(), String> {
+pub fn insert_api_config(conn: State<'_, Mutex<Connection>>, eneity: ApiConfig) -> CmdResult {
     let conn = conn.lock().unwrap();
     mapper::insert_api_config(&conn, eneity).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn set_default_config(conn: State<'_, Mutex<Connection>>, id: u32) -> Result<(), String> {
+pub fn set_default_config(conn: State<'_, Mutex<Connection>>, id: u32) -> CmdResult {
     let conn = conn.lock().unwrap();
     mapper::update_default_config(&conn, id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn delete_api_config(conn: State<'_, Mutex<Connection>>, id: u32) -> Result<(), String> {
+pub fn delete_api_config(conn: State<'_, Mutex<Connection>>, id: u32) -> CmdResult {
     let conn = conn.lock().unwrap();
     mapper::delete_api_config(&conn, id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn query_enable_stream(conn: State<'_, Mutex<Connection>>) -> Result<bool, String> {
+pub fn query_enable_stream(conn: State<'_, Mutex<Connection>>) -> CmdResult<bool> {
     let conn = conn.lock().unwrap();
     mapper::query_enable_stream(&conn).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn update_enable_stream(
-    conn: State<'_, Mutex<Connection>>,
-    stream: bool,
-) -> Result<(), String> {
+pub fn update_enable_stream(conn: State<'_, Mutex<Connection>>, stream: bool) -> CmdResult {
     let conn = conn.lock().unwrap();
     mapper::update_enable_stream(&conn, stream).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn query_associated_context(conn: State<'_, Mutex<Connection>>) -> Result<bool, String> {
+pub fn query_associated_context(conn: State<'_, Mutex<Connection>>) -> CmdResult<bool> {
     let conn = conn.lock().unwrap();
     mapper::query_associated_context(&conn).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn update_associated_context(
-    conn: State<'_, Mutex<Connection>>,
-    context: bool,
-) -> Result<(), String> {
+pub fn update_associated_context(conn: State<'_, Mutex<Connection>>, context: bool) -> CmdResult {
     let conn = conn.lock().unwrap();
     mapper::update_associated_context(&conn, context).map_err(|e| e.to_string())
 }
@@ -77,7 +70,7 @@ pub async fn send_message<R: Runtime>(
     content: String,
     context: Option<ContextMessage>,
     model: Option<RequestModel>,
-) -> Result<(), String> {
+) -> CmdResult {
     let (config, stream) = {
         let conn = conn.lock().unwrap();
         let config = mapper::query_default_config(&conn).unwrap_or_default();
@@ -110,4 +103,3 @@ pub async fn send_message<R: Runtime>(
     }
     Ok(())
 }
-

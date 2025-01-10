@@ -22,3 +22,9 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
         ])
         .build()
 }
+
+pub mod utils {
+    pub fn opstr_to_string(opstr: Option<&str>) -> String {
+        opstr.unwrap_or_default().to_owned()
+    }
+}

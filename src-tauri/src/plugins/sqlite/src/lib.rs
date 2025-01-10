@@ -20,7 +20,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
         .build()
 }
 
-const INIT_DB_SQL: &'static str = "
+const INIT_DB_SQL: &str = "
 BEGIN;
 CREATE TABLE IF NOT EXISTS `chat_box`(
     id          INTEGER PRIMARY KEY,
